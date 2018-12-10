@@ -11,60 +11,64 @@ main() {
         echo "ERROR - Settings file not found or not readable."; exit 1
     fi
 
-	## Prepare automated restore list
+	## Prepare automated restore list - Coming Soon
 	#echo "Preparing automated restore list"
 	#rlfilename=/tmp/restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
-        #/root/restorelist > $rlfilename
-        #aws s3 cp $rlfilename s3://$bucket/$config_base_folder/restorelist/
+    #/root/restorelist > $rlfilename
+    #aws s3 cp $rlfilename s3://$bucket/$config_base_folder/restorelist/
 	#rm $rlfilename
 
-	## Backup LetsEncrypt certs
+	## Backup LetsEncrypt certs - Coming Soon
 	#lefilename=$tmp/letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txz
 	#echo "Backing up LetsEncrypt - $lefilename"
 	#nice -n 19 tar --atime-preserve -cJf $lefilename --directory=/etc/letsencrypt .
 	#aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
 	#rm $lefilename
 
-	# Backup all web sites
+	## Backup all web sites
 	for domain in `ee site list --format=text | sort`
 	do
 		echo Working on: $domain
 
-                ## Backup Database
+        ## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql
 		tmp=/tmp
 		db_user=`ee site info $domain | grep 'DB User' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
-		#ee shell $domain --command="mysqldump --no-create-db --opt --add-drop-table -Q -h $db_host -u $db_user -p$db_password $db_name > ../$dbfilename" >> /tmp/dbexport.log
-		#/var/lib/docker/volumes/11rcom_htdocs/_data/htdocs
+		## dump the datbase
 		docker exec ee-global-db bash -c "mysqldump --no-create-db --opt --add-drop-table -Q -h $db_host -u $db_user -p$db_password $db_name" > $tmp/$dbfilename
-		#ee shell $domain --command="pwd" >> /tmp/dbexport.log
-		#ee shell $domain --command="wp db export $dbfilename" >> /tmp/dbexport.log
+		## Compress
 		nice -n 19 gzip $tmp/$dbfilename
+		## Encrypt
 		nice -n 19 gpg --encrypt --recipient webmaster@example.com $tmp/$dbfilename.gz
+		## Copy to S3
 		aws s3 cp $s3options $tmp/$dbfilename.gz.gpg s3://$bucket/$db_base_folder/$domain/
 		aws s3 ls s3://$bucket/$db_base_folder/$domain/$dbfilename.gz.gpg
+		## Cleanup
 		rm $tmp/$dbfilename*
 
-		## Backup site htdocs folder
+		## Backup Files in htdocs folder
 		filename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+		## Compress the htdocs folder. Use GZIP. Note: xz uses too much ram/cpu for small VPS. 
 		nice -n 19 tar --atime-preserve -czf $tmp/$filename --directory=/opt/easyengine/sites/$domain/app/htdocs/ .
+		## Encrypt to public key
 		nice -n 19 gpg --encrypt --recipient webmaster@example.com $tmp/$filename
+		## Upload to S3
 		aws s3 cp $s3options $tmp/$filename.gpg s3://$bucket/$htdoc_base_folder/$domain/
 		aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/$filename.gpg
+		## Cleanup
 		rm $tmp/$filename*
 
-                # Move any site logs
-                if ls /opt/easyengine/sites/$domain/logs/nginx/access* > /dev/null 2>&1; then
-			logfilename=$domain-access-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.log
-                        mv /opt/easyengine/sites/$domain/logs/nginx/access.log /opt/easyengine/sites/$domain/logs/nginx/$logfilename
+        ## Move site access logs to S3
+        if ls /opt/easyengine/sites/$domain/logs/nginx/access* > /dev/null 2>&1; then
+		 	logfilename=$domain-access-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.log
+            mv /opt/easyengine/sites/$domain/logs/nginx/access.log /opt/easyengine/sites/$domain/logs/nginx/$logfilename
 			nice -n 19 gzip /opt/easyengine/sites/$domain/logs/nginx/$logfilename
 			aws s3 mv $s3options /opt/easyengine/sites/$domain/logs/nginx/$logfilename.gz s3://$bucket/$log_base_folder/$domain/
 			aws s3 ls s3://$bucket/$log_base_folder/$domain/$logfilename.gz
-                fi
-
+        fi
 	done
 }
 
