@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Show the WordPress version for every site
+## Show the WordPress version for every site
 
 main() {
 
