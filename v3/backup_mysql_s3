@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Backup all MySQL databases and upload them to Amazon S3. Settings are located in ~/.backup_mysql_s3.conf
+
+main() {
+    if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
+        . ~/.backup_sites_mysql_s3.conf
+    else
+        echo "ERROR - Settings file not found or not readable."; exit 1
+    fi
+
+    # Loop through every MySQL database
+	for tbl in `mysql -h $dbserver -u $dbuser -p$dbpassword -Bse 'show databases;' `
+	do
+		if [[ ! " ${mysqlexclude[@]} " =~ " ${tbl} " ]]; then
+	        echo "Backup DB: $tbl"
+		mysql_backup "$tbl"
+		aws s3 cp $s3options $filename s3://$bucket/$mysql_base_folder/$tbl/
+	        rm $filename
+        fi
+	done
+}
+
+# Create a compressed copy of $1 MySQL database
+function mysql_backup {
+
+    # Build backup filename
+    filename=$tmp/$1-`/bin/date  -u +"%Y%m%dT%H%M%SZ"`.sql.$comp_ext
+
+    # Backup the database
+    nice -n 19 mysqldump \
+        --no-create-db \
+    	--opt \
+    	--add-drop-table \
+    	-Q \
+    	-h $dbserver \
+    	-u $dbuser \
+    	-p$dbpassword \
+    	$1 | \
+    	$comp_pgm > \
+    	$filename
+}
+
+main "$@"

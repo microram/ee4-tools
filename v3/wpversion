@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Show the WordPress version for every site
+
+main() {
+
+	for domain in `ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	do
+		if [ -f /var/www/$domain/htdocs/wp-includes/version.php ]; then
+			wpver=`grep 'wp_version =' /var/www/$domain/htdocs/wp-includes/version.php | cut -d "'" -f2`
+			printf '%-25s %-8s\n' $domain $wpver
+		fi
+	done
+}
+
+main "$@"

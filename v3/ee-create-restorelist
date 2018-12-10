@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## Outputs the commands needed to restore all the sites
+## Examples ./ee-create-restorelist
+## Outputs
+## ./ee-restore-site.sh example.com --wp
+## ./ee-restore-site.sh example2.com --mysql
+## ./ee-restore-site.sh example3.com --wpfc
+
+
+wprestore=./ee-restore-site.sh
+for i in $(ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort); do
+        cfg=`ee site info "$i" | grep configuration`
+	if [[ $cfg =~ "wp wpfc" ]]; then
+		echo $wprestore $i --wpfc
+        elif [[ $cfg =~ "wp basic" ]]; then
+		echo $wprestore $i --wp
+	elif [[ $cfg =~ "mysql basic" ]]; then
+		echo $wprestore $i --mysql
+	else
+		echo $wprestore $i
+	fi
+done

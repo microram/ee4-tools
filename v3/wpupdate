@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Update the WordPress version for every site
+
+main() {
+
+	for domain in `ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	do
+		if [ -f /var/www/$domain/htdocs/wp-includes/version.php ]; then
+			echo $domain
+			wp core update --allow-root --path=/var/www/$domain/htdocs/ --skip-plugins
+		fi
+	done
+}
+
+main "$@"

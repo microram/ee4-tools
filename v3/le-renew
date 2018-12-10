@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Renew all web sites from ee list
+
+main() {
+
+	#certbot-auto certonly --noninteractive --rsa-key-size 4096 --webroot -w /var/www/example.com/htdocs -d example.com
+	# List web sites. sed to remove color codes in list. 
+	for domain in `ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	do
+		echo "====== $domain ======"
+		dotcount=`echo $domain | tr -cd '.' | wc -c`
+		if [ $dotcount -eq 1 ]
+		then
+			certbot-auto certonly --noninteractive --rsa-key-size 4096 --webroot -w /var/www/$domain/htdocs -d www.$domain -d $domain
+		else
+			certbot-auto certonly --noninteractive --rsa-key-size 4096 --webroot -w /var/www/$domain/htdocs -d $domain
+		fi
+		#read -rsp $'Press any key or wait 2 seconds to continue...\n' -n 1 -t 2;
+	done
+}
+
+main "$@"
