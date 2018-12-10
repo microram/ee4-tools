@@ -1,5 +1,10 @@
 #!/bin/sh -x
 
+## Build a UFW whitelist for CloudFlare & Uptimerobot
+## This script adds SSH limited access from any ip address
+## Usage: Start with a clean ufw rules list. Run 'ufw enable && ufw reset' first.
+## Note: This script works, but could use some cleanup. Not sure where I found this script.
+
 DIR="$(dirname $(readlink -f $0))"
 cd $DIR
 wget https://www.cloudflare.com/ips-v4 -O ips-v4.tmp
