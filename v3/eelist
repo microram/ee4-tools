@@ -1,1 +1,2 @@
+## ee site list without color formatting
 ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort

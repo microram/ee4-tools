@@ -60,8 +60,8 @@ fi
 
 
 ## Get the site deploy script
-aws s3 cp s3://$bucket/scripts/ee4-restore-site.sh ~/
-chmod +x ee4-restore-site.sh
+#aws s3 cp s3://$bucket/scripts/ee4-restore-site.sh ~/
+#chmod +x ee4-restore-site.sh
 
 ## Get the backup scripts and settings
 #aws s3 cp s3://$bucket/scripts/backup_sites_s3 /etc/cron.daily/
@@ -70,9 +70,9 @@ chmod +x ee4-restore-site.sh
 #chmod +x /etc/cron.daily/backup_mysql_s3
 
 ## Get the list of sites to restore
-restorefile=`aws s3 ls s3://$bucket/$config_base_folder/restorelist/ | awk '{print $4}' | tail -1`
-aws s3 cp s3://$bucket/$config_base_folder/restorelist/$restorefile ~/
-chmod +x ~/$restorefile*
+#restorefile=`aws s3 ls s3://$bucket/$config_base_folder/restorelist/ | awk '{print $4}' | tail -1`
+#aws s3 cp s3://$bucket/$config_base_folder/restorelist/$restorefile ~/
+#chmod +x ~/$restorefile*
 
 ## Get the latest LetsEncrypt certs
 #lefile=`aws s3 ls s3://$bucket/$le_base_folder/ | awk '{print $4}' | tail -1`

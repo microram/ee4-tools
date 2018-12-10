@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## Use from withing htdocs/
+## Use from within htdocs/
 ## Example  cd /var/www/example.com/htdocs && ~/fixown.sh
 
 ## Change owner to same as current level aka ./
