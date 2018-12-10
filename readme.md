@@ -6,6 +6,8 @@ Easy Engine v4 Server Setup &  Backup / Restore Tools
 
 Please use caution, some bucket names/folders are still hard coded. 
 
+No support available. Use at your own risk.
+
 ee4-restore-site only restores from v3 backups. This is currently being used for v3 to v4 migration. 
 
 ### Prerequisites
