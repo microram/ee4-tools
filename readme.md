@@ -4,9 +4,9 @@ Easy Engine v4 Server Setup &  Backup / Restore Tools
 
 ## Getting Started
 
-coming soon
+Please use caution, some bucket names/folders are still hard coded. 
 
-Note: ee4-restore only restores from v3 backups currently used for migration. 
+ee4-restore-site only restores from v3 backups. This is currently being used for v3 to v4 migration. 
 
 ### Prerequisites
 
@@ -14,9 +14,10 @@ Tested with Ubuntu 18.04 & Amazon S3
 
 ### Installing
 
-Edit the .file first
-Run ee4-server-setup
+Edit the .backup_sites_mysql_s3.conf & .ee4-backup-settings.conf files first
+
+Then run ee4-server-setup on your Ubuntu 18.04 VPS. Currently tested using AWS Lightail.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
