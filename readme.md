@@ -1,8 +1,8 @@
-# Project Title
+# ee4-tools
 
-A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server
+A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
 
-The backup scripts compress each site htdocs folder and database. Full copies are uploaded to Amazon S3 buckets. Place the script in cron.daily for automated backups.  
+The backup script creates a full compressed copy of each site to upload to S3. The 'htdocs' folder and MariaDB/MySQL database are uploaded in separate well organized folders and files. This is opposite of other projects that attempt to create incremental backups. Glacier storage is inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill. Place the ee4-backup-sites v4 script (or backup_sites_s3 & backup_mysql_s3 v3 scripts) in /etc/cron.daily/ for automated backups after your testing.
 
 ### EasyEngine v4 Tools
 
@@ -22,6 +22,7 @@ The backup scripts compress each site htdocs folder and database. Full copies ar
 - LetsEncrypt Delete, Renew and Status scripts
 - Check the WordPress version on all sites
 - Update the WordPress version on all sites suitable for cron
+- [WordOps](https://wordops.org/) the v3 EasyEngine fork project may be supported in the future
 
 ## Getting Started
 
@@ -35,7 +36,7 @@ The ee4-restore-site script only restores from v3 backups. This is currently bei
 
 Tested with Ubuntu 18.04 on Amazon LightSail & Amazon S3 for backup storage.
 
-S3cmd is no longer supported. Use AWS S3 cli. 
+Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be removed in future updates.
 
 ### Installing
 
