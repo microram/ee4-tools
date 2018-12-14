@@ -2,7 +2,7 @@
 
 A mostly working collection of scripts for managing an EasyEngine WordPress hosting server
 
-The backup scripts are intended to run daily to Amazon S3 buckets. 
+The backup scripts compress each site htdocs folder and database. Full copies are uploaded to Amazon S3 buckets. Place the script in cron.daily for automated backups.  
 
 ### Easy Engine v4 Tools
 
@@ -39,7 +39,7 @@ S3cmd is no longer supported. Use AWS S3 cli.
 
 ### Installing
 
-Edit the .backup_sites_mysql_s3.conf & .ee4-backup-settings.conf files first
+Edit the .backup_sites_mysql_s3.conf & .ee4-backup-settings.conf files first. Then edit and review each script before using. Some scripts still have hard coded folders at this time. 
 
 Then run ee4-server-setup on your fresh Ubuntu 18.04 VPS.
 
