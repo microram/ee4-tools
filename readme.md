@@ -1,16 +1,16 @@
 # Project Title
 
-A mostly working collection of scripts for managing an EasyEngine WordPress hosting server
+A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server
 
 The backup scripts compress each site htdocs folder and database. Full copies are uploaded to Amazon S3 buckets. Place the script in cron.daily for automated backups.  
 
-### Easy Engine v4 Tools
+### EasyEngine v4 Tools
 
 - Server setup script (Ubuntu 18.04)
 - Restore from v3 backup (v4 Coming)
 - Backup (Compress, Encrypt, and copy to S3)
 
-### Easy Engine v3 Tools
+### EasyEngine v3 Tools
 
 - Backup all EasyEngine sites to S3
 - Backup all MySQL databases to S3 (EasyEngine not required)
