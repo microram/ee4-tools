@@ -19,13 +19,14 @@ main() {
         #aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
         #rm $lefilename
 
-	## Prepare automated restore list
+	## Prepare automated restore list (n/a items not available yet)
         # Params:
         #        $1 = domain name (example.com)
-        #        $2 = site type --type=wp | --type=php | --type=html
+        #        $2 = site type --type=wp | --type=php (n/a) | --type=html (n/a)
         #        $3 = redis cache --cache
-        #        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self
-        #        $5 = letsencrypt email --le-mail=webmaster@example.com
+        #        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self (n/a)
+        #        $5 = letsencrypt email --le-mail=webmaster@example.com (n/a)
+	#	 $6 = admin email --admin-email=admin@example.com
 	echo "Preparing automated restore list"
 	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
         for domain in `ee site list --format=text | sort`
@@ -43,8 +44,6 @@ main() {
         aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$config_base_folder/restorelist/
 	aws s3 ls s3://$bucket/$config_base_folder/restorelist/$rlfilename
         rm $tmp/$rlfilename
-
-exit
 
 	## Backup all web sites
 	for domain in `ee site list --format=text | sort`
