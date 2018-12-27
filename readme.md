@@ -7,7 +7,8 @@ The backup script creates a full compressed copy of each site to upload to S3. T
 ### EasyEngine v4 Tools
 
 - Server setup script (Ubuntu 18.04)
-- Restore from v3 backup (v4 Coming)
+- Restore from v3 backup to v4 server
+- Restore from v4 backup (Caution, just posted)
 - Backup htdocs, MySQL & Le certs (Compress, Encrypt, and copy to S3)
 - Create server rebuild script for disaster recovery (restorelist.txt)
 
