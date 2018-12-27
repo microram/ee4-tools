@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Backup all web sites and upload them to Amazon S3
 
