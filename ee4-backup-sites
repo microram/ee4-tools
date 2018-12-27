@@ -12,12 +12,7 @@ main() {
 	fi
 
 	db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
-        ## Backup LetsEncrypt certs - Coming Soon
-        #lefilename=$tmp/letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txz
-        #echo "Backing up LetsEncrypt - $lefilename"
-        #nice -n 19 tar --atime-preserve -cJf $lefilename --directory=/etc/letsencrypt .
-        #aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
-        #rm $lefilename
+	proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 
 	## Prepare automated restore list (n/a items not available yet)
         # Params:
@@ -53,6 +48,7 @@ main() {
 		## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql
 		tmp=/tmp
+		## Note most credentials stored in /opt/easyengine/sites/example.com/.env
 		db_user=`ee site info $domain | grep 'DB User' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
@@ -71,7 +67,7 @@ main() {
 
 		## Backup Files in htdocs folder
 		filename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
-		## Compress the htdocs folder. Use GZIP. Note: xz uses too much ram/cpu for small VPS. 
+		## Compress the htdocs folder. Use GZIP. xz uses too much ram/cpu for small VPS.
 		nice -n 19 tar --atime-preserve -czf $tmp/$filename --directory=/opt/easyengine/sites/$domain/app/htdocs/ .
 		## Encrypt to public key
 		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$filename
@@ -80,6 +76,15 @@ main() {
 		aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/$filename.gpg
 		## Cleanup
 		rm $tmp/$filename*
+
+        	## Backup LetsEncrypt certs - Coming Soon
+        	lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+		docker exec $proxy_container bash -c "cd /etc/nginx && tar --atime-preserve -czf /tmp/$lefilename conf.d/$domain-*.conf certs/$domain.*"
+        	docker cp $proxy_container:/tmp/$lefilename $tmp/
+		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$lefilename
+        	aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$le_base_folder/$domain/
+        	aws s3 ls s3://$bucket/$le_base_folder/$domain/$lefilename.gpg
+		rm $tmp/$lefilename
 
 		## Move site access logs to S3
 		if ls /opt/easyengine/sites/$domain/logs/nginx/access* > /dev/null 2>&1; then
