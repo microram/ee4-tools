@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Update the WordPress version for every site
+## Update the WordPress version for every site
 
 main() {
 
