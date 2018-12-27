@@ -12,19 +12,39 @@ main() {
 	fi
 
 	db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
-	## Prepare automated restore list - Coming Soon
-	#echo "Preparing automated restore list"
-	#rlfilename=/tmp/restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
-	#/root/restorelist > $rlfilename
-	#aws s3 cp $rlfilename s3://$bucket/$config_base_folder/restorelist/
-	#rm $rlfilename
+        ## Backup LetsEncrypt certs - Coming Soon
+        #lefilename=$tmp/letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txz
+        #echo "Backing up LetsEncrypt - $lefilename"
+        #nice -n 19 tar --atime-preserve -cJf $lefilename --directory=/etc/letsencrypt .
+        #aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
+        #rm $lefilename
 
-	## Backup LetsEncrypt certs - Coming Soon
-	#lefilename=$tmp/letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txz
-	#echo "Backing up LetsEncrypt - $lefilename"
-	#nice -n 19 tar --atime-preserve -cJf $lefilename --directory=/etc/letsencrypt .
-	#aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
-	#rm $lefilename
+	## Prepare automated restore list
+        # Params:
+        #        $1 = domain name (example.com)
+        #        $2 = site type --type=wp | --type=php | --type=html
+        #        $3 = redis cache --cache
+        #        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self
+        #        $5 = letsencrypt email --le-mail=webmaster@example.com
+	echo "Preparing automated restore list"
+	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
+        for domain in `ee site list --format=text | sort`
+        do
+		## Crude but I expect this to change when --format is working
+		site_lessl=`ee site info $domain | grep 'SSL' | head -n 1 | awk -F '|' '{print $3}' | awk '{print $1}'`
+                site_wcssl=`ee site info $domain | grep 'Wildcard' | awk -F '|' '{print $3}' | awk '{print $1}'`
+		site_cache=`ee site info $domain | grep 'Cache' | awk -F '|' '{print $3}' | awk '{print $1}'`
+		site_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
+                if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
+                if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
+		echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email >> $tmp/$rlfilename
+	done
+        aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$config_base_folder/restorelist/
+	aws s3 ls s3://$bucket/$config_base_folder/restorelist/$rlfilename
+        rm $tmp/$rlfilename
+
+exit
 
 	## Backup all web sites
 	for domain in `ee site list --format=text | sort`
