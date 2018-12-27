@@ -38,8 +38,8 @@ function main {
 	ee site create $domain $2 $3 $4 $5 $6
 
 	# Restore the site
-	echo Restoring $domain from S3
-	restore_wp_domain_s3
+	echo Restoring $domain htdocs
+	restore_htdocs
 
 	# Restore the database if specified
 	if [ -n "$2" ]; then
@@ -47,8 +47,8 @@ function main {
         	db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
-		#echo Restoring database for $domain
-		#restore_db_s3
+		echo Restoring $domain database
+		restore_db
 	fi
 
 	## Install any new plugins
@@ -60,7 +60,7 @@ function main {
 
 } #main
 
-function restore_wp_domain_s3 {
+function restore_htdocs {
 	## Clean the site folder
 	rm -rf /opt/easyengine/sites/$domain/app/htdocs
 
@@ -82,20 +82,23 @@ function restore_wp_domain_s3 {
 	rm $tmp/$domain*
 }
 
-function restore_db_s3 {
+function restore_db {
 	## Drop all the tables
 	ee shell $domain --command="mysqldump -h $db_host -u$db_user -p$db_password --no-data --add-drop-table $db_name | grep ^DROP | mysql -h $db_host -u$db_user -p$db_password $db_name"
 	## Lookup the newest database backup
-	dbfile=`aws s3 ls s3://$bucket/hosting2/backup/mysql/$db_name/ | awk '{print $4}' | tail -1`
-	## Build a filename without the .xz
-	dbfile2=${dbfile/.sql.xz/.sql}
-	## Download the newest backup
-	aws s3 cp s3://$bucket/hosting2/backup/mysql/$db_name/$dbfile /opt/easyengine/sites/$domain/app/
-	## Decompress the donwload
-	xz -d /opt/easyengine/sites/$domain/app/$dbfile
+	dbfile=`aws s3 ls s3://$bucket/$mysql_base_folder/$domain/ | awk '{print $4}' | tail -1`
+	## Build a filename without the .gpg
+	dbfile2=${dbfile/.sql.gz.gpg/.sql.gz}
+        dbfile3=${dbfile/.sql.gz/.sql}
+	## Download the newest database backup
+	aws s3 cp s3://$bucket/$mysql_base_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
+	## Decrypt
+	gpg --decrypt /opt/easyengine/sites/$domain/app/$dbfile > /opt/easyengine/sites/$domain/app/$dbfile2
+	## Decompress
+	gunzip /opt/easyengine/sites/$domain/app/$dbfile2
 	## Restore the datbase into the container
-	ee shell $domain --command="mysql -h $db_host -u $db_user -p$db_password $db_name < ../$dbfile2"
-	rm /opt/easyengine/sites/$domain/app/$dbfile2
+	ee shell $domain --command="mysql -h $db_host -u $db_user -p$db_password $db_name < ../$dbfile3"
+	rm /opt/easyengine/sites/$domain/app/$dbfile3
 }
 
 main "$@"
