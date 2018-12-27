@@ -12,7 +12,9 @@ ee4-restore-site only restores from v3 backups. This is currently being used for
 
 ### Prerequisites
 
-Tested with Ubuntu 18.04 & Amazon S3
+[EasyEngine](https://easyengine.io) v3 or v4 Tested with Ubuntu 18.04 & Amazon S3
+
+Tested on EasyEngine v4.0.8
 
 ### Installing
 
