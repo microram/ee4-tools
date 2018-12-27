@@ -43,7 +43,7 @@ main() {
 		## Compress
 		nice -n 19 gzip $tmp/$dbfilename
 		## Encrypt
-		nice -n 19 gpg --encrypt --recipient webmaster@example.com $tmp/$dbfilename.gz
+		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$dbfilename.gz
 		## Copy to S3
 		aws s3 cp $s3options $tmp/$dbfilename.gz.gpg s3://$bucket/$db_base_folder/$domain/
 		aws s3 ls s3://$bucket/$db_base_folder/$domain/$dbfilename.gz.gpg
@@ -55,7 +55,7 @@ main() {
 		## Compress the htdocs folder. Use GZIP. Note: xz uses too much ram/cpu for small VPS. 
 		nice -n 19 tar --atime-preserve -czf $tmp/$filename --directory=/opt/easyengine/sites/$domain/app/htdocs/ .
 		## Encrypt to public key
-		nice -n 19 gpg --encrypt --recipient webmaster@example.com $tmp/$filename
+		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$filename
 		## Upload to S3
 		aws s3 cp $s3options $tmp/$filename.gpg s3://$bucket/$htdoc_base_folder/$domain/
 		aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/$filename.gpg
