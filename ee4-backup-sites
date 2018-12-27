@@ -22,6 +22,7 @@ main() {
         #        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self (n/a)
         #        $5 = letsencrypt email --le-mail=webmaster@example.com (n/a)
 	#	 $6 = admin email --admin-email=admin@example.com
+	#        $7 = S3_base_folder (helps if restoring partial site list to alternate server)
 	echo "Preparing automated restore list"
 	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
         for domain in `ee site list --format=text | sort`
@@ -34,7 +35,7 @@ main() {
                 if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
                 if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
                 if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
-		echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email >> $tmp/$rlfilename
+		echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_base_folder=$base_folder >> $tmp/$rlfilename
 	done
         aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$config_base_folder/restorelist/
 	aws s3 ls s3://$bucket/$config_base_folder/restorelist/$rlfilename
