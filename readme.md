@@ -28,11 +28,13 @@ The backup script creates a full compressed copy of each site to upload to S3. B
 
 ## Getting Started
 
-Please use caution, some bucket names/folders are still hard coded. 
+Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment.  
 
 No support available. Use at your own risk.
 
-The ee4-restore-site script is working. More work is needed on better handling of command line options. 
+All scripts are expected to be mostly working at this time. You should be able to backup and restore.
+
+The ee4-restore-site script is now working. More work is needed on better handling of command line options. 
 
 #### Usage Examples
 
