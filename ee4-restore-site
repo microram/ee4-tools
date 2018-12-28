@@ -55,8 +55,8 @@ function main {
 	#ee shell $domain --command="wp plugin install https://downloads.wordpress.org/plugin/machete.zip --force --activate"
 
 	## Enable the admin tools
-	#echo Enabling admin tools for $domain
-	#ee admin-tools enable $domain
+	echo Enabling admin tools for $domain
+	ee admin-tools enable $domain
 
 } #main
 
@@ -75,11 +75,11 @@ function restore_htdocs {
 	sitefile2=${sitefile/.tgz.gpg/.tgz}
 	gpg --decrypt $tmp/$sitefile > $tmp/$sitefile2
 	## Extract the download
-	ls -l /opt/easyengine/sites/$domain/app/
 	tar xf $tmp/$sitefile2 -C /opt/easyengine/sites/$domain/app/htdocs/
 	## Fix file and folder permissions
 	find /opt/easyengine/sites/$domain/app/htdocs/ -type f -exec chmod 644 {} \;
 	find /opt/easyengine/sites/$domain/app/htdocs/ -type d -exec chmod 755 {} \;
+ 	chown -Rf www-data:www-data /opt/easyengine/sites/$domain/app/htdocs/
 	rm $tmp/$domain*
 }
 
