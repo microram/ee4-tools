@@ -20,6 +20,8 @@ function main {
                 echo "ERROR - Settings file not found or not readable."; exit 1
         fi
 
+	ee config set le-mail $le_email
+
         db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
         proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 
@@ -47,6 +49,9 @@ function main {
         	db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                wp_user=`ee site info $domain | grep 'WordPress Username' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                wp_pass=`ee site info $domain | grep 'WordPress Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                wp_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		echo Restoring $domain database
 		restore_db
 	fi
@@ -101,8 +106,10 @@ function restore_db {
 	## Restore the datbase into the container
 	ee shell $domain --command="mysql -h $db_host -u $db_user -p$db_password $db_name < ../$dbfile3"
 	rm /opt/easyengine/sites/$domain/app/$dbfile3
-	## Note ee site info WP User & Password gets wiped out
-
+	## Fix ee site info WP User & Password
+	ee shell $domain --command="wp user create $wp_user $wp_email --user_pass=$wp_pass --role=administrator"
+        ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
+	#ee shell 11r.com --command="wp user delete test@example.com --yes"
 }
 
 main "$@"
