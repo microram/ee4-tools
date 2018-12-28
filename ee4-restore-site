@@ -55,14 +55,14 @@ function main {
 	#ee shell $domain --command="wp plugin install https://downloads.wordpress.org/plugin/machete.zip --force --activate"
 
 	## Enable the admin tools
-	echo Enabling admin tools for $domain
-	ee admin-tools enable $domain
+	#echo Enabling admin tools for $domain
+	#ee admin-tools enable $domain
 
 } #main
 
 function restore_htdocs {
 	## Clean the site folder
-	rm -rf /opt/easyengine/sites/$domain/app/htdocs
+	rm -rf /opt/easyengine/sites/$domain/app/htdocs/*
 
 	## Determine the newest site backup file
 	sitefile=`aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/ | awk '{print $4}' | tail -1`
@@ -75,6 +75,7 @@ function restore_htdocs {
 	sitefile2=${sitefile/.tgz.gpg/.tgz}
 	gpg --decrypt $tmp/$sitefile > $tmp/$sitefile2
 	## Extract the download
+	ls -l /opt/easyengine/sites/$domain/app/
 	tar xf $tmp/$sitefile2 -C /opt/easyengine/sites/$domain/app/htdocs/
 	## Fix file and folder permissions
 	find /opt/easyengine/sites/$domain/app/htdocs/ -type f -exec chmod 644 {} \;
@@ -90,9 +91,9 @@ function restore_db {
 	## Build a filename without the .gpg
 	dbfile2=${dbfile/.sql.gz.gpg/.sql.gz}
 	## Now build a filename without the .gz
-        dbfile3=${dbfile/.sql.gz/.sql}
+        dbfile3=${dbfile2/.sql.gz/.sql}
 	## Download the newest database backup
-	aws s3 cp s3://$bucket/$db_base_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
+	aws s3 cp $s3options s3://$bucket/$db_base_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
 	## Decrypt
 	gpg --decrypt /opt/easyengine/sites/$domain/app/$dbfile > /opt/easyengine/sites/$domain/app/$dbfile2
 	## Decompress
@@ -100,6 +101,8 @@ function restore_db {
 	## Restore the datbase into the container
 	ee shell $domain --command="mysql -h $db_host -u $db_user -p$db_password $db_name < ../$dbfile3"
 	rm /opt/easyengine/sites/$domain/app/$dbfile3
+	## Note ee site info WP User & Password gets wiped out
+
 }
 
 main "$@"
