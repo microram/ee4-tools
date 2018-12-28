@@ -33,8 +33,9 @@ Please use caution, some bucket names/folders are still hard coded.
 No support available. Use at your own risk.
 
 The ee4-restore-site script is working. More work is needed on better handling of command line options. Usage Examples:
-  ./ee4-restore-site example.com --type=wp --cache --ssl=self
-  ./ee4-restore-site example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
+
+    ./ee4-restore-site example.com --type=wp --cache --ssl=self
+    ./ee4-restore-site example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
 
 Coming soon --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
 
