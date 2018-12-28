@@ -8,7 +8,7 @@ The backup script creates a full compressed copy of each site to upload to S3. T
 
 - Server setup script (Ubuntu 18.04)
 - Restore from v3 backup to v4 server
-- Restore from v4 backup (Caution, just posted)
+- Restore from v4 backup (Now working. See usage notes below)
 - Backup htdocs, MySQL & Le certs (Compress, Encrypt, and copy to S3)
 - Create server rebuild script for disaster recovery (restorelist.txt)
 
@@ -32,7 +32,11 @@ Please use caution, some bucket names/folders are still hard coded.
 
 No support available. Use at your own risk.
 
-The ee4-restore-site script only restores from v3 backups. This is currently being used for v3 to v4 migration. A v4 restore script will be added soon.
+The ee4-restore-site script is working. More work is needed on better handling of command line options. Usage Examples:
+  ./ee4-restore-site example.com --type=wp --cache --ssl=self
+  ./ee4-restore-site example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
+
+Coming soon --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
 
 ### Prerequisites
 
