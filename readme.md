@@ -68,7 +68,7 @@ Edit the .backup_sites_mysql_s3.conf & .ee4-backup-settings.conf files first. Th
 
 Then run ee4-server-setup on your fresh Ubuntu 18.04 VPS.
 
-Setup a GPG key. 
+Setup or import a GPG public key. Don't forget to backup this key. You will need the secret private key only for restores.
 
 Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder. 
 
