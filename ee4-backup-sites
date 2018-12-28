@@ -13,38 +13,22 @@ main() {
 
 	db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
 	proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
-
-	## Prepare automated restore list (n/a items not available yet)
-        # Params:
-        #        $1 = domain name (example.com)
-        #        $2 = site type --type=wp | --type=php (n/a) | --type=html (n/a)
-        #        $3 = redis cache --cache
-        #        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self (n/a)
-        #        $5 = letsencrypt email --le-mail=webmaster@example.com (n/a)
-	#	 $6 = admin email --admin-email=admin@example.com
-	#        $7 = S3_base_folder (helps if restoring partial site list to alternate server)
-	echo "Preparing automated restore list"
-	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
-        for domain in `ee site list --format=text | sort`
-        do
-		## Crude but I expect this to change when --format is working
-		site_lessl=`ee site info $domain | grep 'SSL' | head -n 1 | awk -F '|' '{print $3}' | awk '{print $1}'`
-                site_wcssl=`ee site info $domain | grep 'Wildcard' | awk -F '|' '{print $3}' | awk '{print $1}'`
-		site_cache=`ee site info $domain | grep 'Cache' | awk -F '|' '{print $3}' | awk '{print $1}'`
-		site_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
-                if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
-                if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
-		echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_base_folder=$base_folder >> $tmp/$rlfilename
-	done
-        aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$config_base_folder/restorelist/
-	aws s3 ls s3://$bucket/$config_base_folder/restorelist/$rlfilename
-        rm $tmp/$rlfilename
+	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sh
 
 	## Backup all web sites
 	for domain in `ee site list --format=text | sort`
 	do
 		echo Working on: $domain
+
+		## Prepare automated restore list
+                site_lessl=`ee site info $domain | grep 'SSL' | head -n 1 | awk -F '|' '{print $3}' | awk '{print $1}'`
+                site_wcssl=`ee site info $domain | grep 'Wildcard' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                site_cache=`ee site info $domain | grep 'Cache' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                site_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
+                if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
+                if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
+                if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
+                echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
 
 		## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql
@@ -61,8 +45,8 @@ main() {
 		## Encrypt
 		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$dbfilename.gz
 		## Copy to S3
-		aws s3 cp $s3options $tmp/$dbfilename.gz.gpg s3://$bucket/$db_base_folder/$domain/
-		aws s3 ls s3://$bucket/$db_base_folder/$domain/$dbfilename.gz.gpg
+		aws s3 cp $s3options $tmp/$dbfilename.gz.gpg s3://$bucket/$server_name/$db_backup_folder/$domain/
+		aws s3 ls s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfilename.gz.gpg
 		## Cleanup
 		rm $tmp/$dbfilename*
 
@@ -73,29 +57,38 @@ main() {
 		## Encrypt to public key
 		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$filename
 		## Upload to S3
-		aws s3 cp $s3options $tmp/$filename.gpg s3://$bucket/$htdoc_base_folder/$domain/
-		aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/$filename.gpg
+		aws s3 cp $s3options $tmp/$filename.gpg s3://$bucket/$server_name/$htdoc_backup_folder/$domain/
+		aws s3 ls s3://$bucket/$server_name/$htdoc_backup_folder/$domain/$filename.gpg
 		## Cleanup
 		rm $tmp/$filename*
 
         	## Backup LetsEncrypt certs
-        	lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
-		docker exec $proxy_container bash -c "cd /etc/nginx && tar --atime-preserve -czf /tmp/$lefilename conf.d/$domain-*.conf certs/$domain.*"
-        	docker cp $proxy_container:/tmp/$lefilename $tmp/
-		nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$lefilename
-        	aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$le_base_folder/$domain/
-        	aws s3 ls s3://$bucket/$le_base_folder/$domain/$lefilename.gpg
-		rm $tmp/$lefilename
+		if [ $site_lessl == Enabled ]; then
+        		lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+			docker exec $proxy_container bash -c "cd /etc/nginx && tar --ignore-failed-read --atime-preserve -czf /tmp/$lefilename conf.d/$domain-*.conf certs/$domain.*"
+        		docker cp $proxy_container:/tmp/$lefilename $tmp/
+			nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$lefilename
+        		aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$server_name/$le_backup_folder/$domain/
+        		aws s3 ls s3://$bucket/$server_name/$le_backup_folder/$domain/$lefilename.gpg
+			rm $tmp/$lefilename
+		fi
 
 		## Move site access logs to S3
 		if ls /opt/easyengine/sites/$domain/logs/nginx/access* > /dev/null 2>&1; then
 			logfilename=$domain-access-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.log
 			mv /opt/easyengine/sites/$domain/logs/nginx/access.log /opt/easyengine/sites/$domain/logs/nginx/$logfilename
 			nice -n 19 gzip /opt/easyengine/sites/$domain/logs/nginx/$logfilename
-			aws s3 mv $s3options /opt/easyengine/sites/$domain/logs/nginx/$logfilename.gz s3://$bucket/$log_base_folder/$domain/
-			aws s3 ls s3://$bucket/$log_base_folder/$domain/$logfilename.gz
+			aws s3 mv $s3options /opt/easyengine/sites/$domain/logs/nginx/$logfilename.gz s3://$bucket/$server_name/$log_folder/$domain/
+			aws s3 ls s3://$bucket/$server_name/$log_folder/$domain/$logfilename.gz
 		fi
 	done
+
+	## Finish the restorelist file
+        aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$server_name/$restorelist_backup_folder/
+        aws s3 ls s3://$bucket/$server_name/$restorelist_backup_folder/$rlfilename
+        rm $tmp/$rlfilename
+
+
 }
 
 main "$@"

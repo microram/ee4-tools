@@ -70,10 +70,10 @@ function restore_htdocs {
 	rm -rf /opt/easyengine/sites/$domain/app/htdocs/*
 
 	## Determine the newest site backup file
-	sitefile=`aws s3 ls s3://$bucket/$htdoc_base_folder/$domain/ | awk '{print $4}' | tail -1`
+	sitefile=`aws s3 ls s3://$bucket/$server_name/$htdoc_backup_folder/$domain/ | awk '{print $4}' | tail -1`
 	## Download if needed the site backup file
         if [ ! -f $tmp/$sitefile ]; then
-		aws s3 cp s3://$bucket/$htdoc_base_folder/$domain/$sitefile $tmp/
+		aws s3 cp s3://$bucket/$server_name/$htdoc_backup_folder/$domain/$sitefile $tmp/
 	fi
 
 	## Decrypt the download
@@ -92,13 +92,13 @@ function restore_db {
 	## Drop all the tables
 	ee shell $domain --command="mysqldump -h $db_host -u$db_user -p$db_password --no-data --add-drop-table $db_name | grep ^DROP | mysql -h $db_host -u$db_user -p$db_password $db_name"
 	## Lookup the newest database backup
-	dbfile=`aws s3 ls s3://$bucket/$db_base_folder/$domain/ | awk '{print $4}' | tail -1`
+	dbfile=`aws s3 ls s3://$bucket/$server_name/$db_backup_folder/$domain/ | awk '{print $4}' | tail -1`
 	## Build a filename without the .gpg
 	dbfile2=${dbfile/.sql.gz.gpg/.sql.gz}
 	## Now build a filename without the .gz
         dbfile3=${dbfile2/.sql.gz/.sql}
 	## Download the newest database backup
-	aws s3 cp $s3options s3://$bucket/$db_base_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
+	aws s3 cp $s3options s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
 	## Decrypt
 	gpg --decrypt /opt/easyengine/sites/$domain/app/$dbfile > /opt/easyengine/sites/$domain/app/$dbfile2
 	## Decompress
