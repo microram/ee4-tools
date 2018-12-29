@@ -28,7 +28,7 @@ main() {
                 if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
                 if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
                 if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
-                echo ee4-restore-site $domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
+                echo ee4-restore-site --domain=$domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
 
 		## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql

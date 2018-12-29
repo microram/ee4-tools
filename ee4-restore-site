@@ -1,33 +1,55 @@
 #!/bin/bash
 #
-#  Restore EasyEngine4 site
+#  Restore EasyEngine v4 site
 #
-# Params:
-#        $1 = domain name (example.com)
-#        $2 = site type --type=wp | --type=php (n/a) | --type=html (n/a)
-#        $3 = redis cache --cache
-#        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self (n/a)
-#        $5 = letsencrypt email --le-mail=webmaster@example.com (n/a)
-#        $6 = admin email --admin-email=admin@example.com
-#        $7 = S3_base_folder (helps if restoring partial site list to alternate server)
+#  Usage: ee4-restore-site --domain=example.com --type=wp --ssl=self --cache
+#
 
-function main {
 
-        # Load Configuration
-        if [[ -r ~/.ee4-backup-settings.conf ]] ; then
-                . ~/.ee4-backup-settings.conf
-        else
-                echo "ERROR - Settings file not found or not readable."; exit 1
-        fi
+	# Params:
+	#        $1 = domain name --domain=example.tld
+	#        $2 = site type --type=wp | --type=php | --type=html
+	#        $3 = redis cache --cache
+	#        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self
+	#        $5 = letsencrypt email --le-mail=webmaster@example.com
+	#        $6 = admin email --admin-email=admin@example.com
+	#        $7 = backup server name --s3_server_name=hosting1 (optional restore from a different server backup)
+
+	## Argument pre-processing
+	while [ "$#" -gt 0 ]; do
+	  case "$1" in
+	    ## Short param method 
+	    #-s) shortname="$2"; shift 2;;
+	    ## No arguments
+	    --cache) eecache="--cache"; shift 1;;
+	    --wildcard) eewildcard="--wildcard"; shift 1;;
+	    ## Argument = required
+	    --domain=*) domain="${1#*=}"; shift 1;;
+	    --type=*) eetype="${1#*=}"; shift 1;;
+	    --ssl=*) eessl="${1#*=}"; shift 1;;
+	    --le-mail=*) eelemail="${1#*=}"; shift 1;;
+	    --admin-email=*) eeadminemail="${1#*=}"; shift 1;;
+	    --s3_server_name=*) s3_server_name="${1#*=}"; shift 1;;
+	    --type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
+		## Error handling
+	    -*) echo "unknown option: $1" >&2; exit 1;;
+	    *) handle_argument "$1"; shift 1;;
+	  esac
+	done
+	echo ":domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
+	exit
+	
+    # Load Configuration
+    if [[ -r ~/.ee4-backup-settings.conf ]] ; then
+            . ~/.ee4-backup-settings.conf
+    else
+            echo "ERROR - Settings file not found or not readable."; exit 1
+    fi
 
 	ee config set le-mail $le_email
 
-        db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
-        proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
-
-	# Globals
-	tmp=/tmp
-	domain=$1
+    db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
+    proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 
 	# Check site exists and delete
 	if [ -d "/opt/easyengine/sites/$domain" ]; then
@@ -37,7 +59,7 @@ function main {
 
 	# Create the site
 	echo Create $domain
-	ee site create $domain $2 $3 $4 $5 $6
+	ee site create $domain --type=$eetype --ssl=$eessl --le-email=$eelemail --admin-email=$eeadminemail $eecache $eewildcard
 
 	# Restore the site
 	echo Restoring $domain htdocs
@@ -89,7 +111,7 @@ function restore_htdocs {
 }
 
 function restore_db {
-	## Drop all the tables
+	## Drop all the tables (The MySQL equivalent to XOR AX, AX)
 	ee shell $domain --command="mysqldump -h $db_host -u$db_user -p$db_password --no-data --add-drop-table $db_name | grep ^DROP | mysql -h $db_host -u$db_user -p$db_password $db_name"
 	## Lookup the newest database backup
 	dbfile=`aws s3 ls s3://$bucket/$server_name/$db_backup_folder/$domain/ | awk '{print $4}' | tail -1`
