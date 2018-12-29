@@ -7,12 +7,12 @@
 
 function main {
 
-    # Load Configuration
-    if [[ -r ~/.ee4-backup-settings.conf ]] ; then
-         . ~/.ee4-backup-settings.conf
-    else
-         echo "ERROR - Settings file not found or not readable."; exit 1
-    fi
+	# Load Configuration
+	if [[ -r ~/.ee4-backup-settings.conf ]] ; then
+		. ~/.ee4-backup-settings.conf
+	else
+		echo "ERROR - Settings file not found or not readable."; exit 1
+	fi
 
 	# Params:
 	#  $1 = domain name --domain=example.tld
