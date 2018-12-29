@@ -40,8 +40,8 @@ The ee4-restore-site script is now working. More work is needed on better handli
 
 #### Usage Examples
 
-    ./ee4-restore-site example.com --type=wp --cache --ssl=self
-    ./ee4-restore-site example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
+    ./ee4-restore-site --domain=example.com --type=wp --cache --ssl=self
+    ./ee4-restore-site --domain=example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
 
 #### Coming soon
 
