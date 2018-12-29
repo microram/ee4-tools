@@ -5,6 +5,7 @@
 #  Usage: ee4-restore-site --domain=example.com --type=wp --ssl=self --cache
 #
 
+function main {
 
 	# Params:
 	#        $1 = domain name --domain=example.tld
@@ -25,10 +26,10 @@
 	    --wildcard) eewildcard="--wildcard"; shift 1;;
 	    ## Argument = required
 	    --domain=*) domain="${1#*=}"; shift 1;;
-	    --type=*) eetype="${1#*=}"; shift 1;;
-	    --ssl=*) eessl="${1#*=}"; shift 1;;
-	    --le-mail=*) eelemail="${1#*=}"; shift 1;;
-	    --admin-email=*) eeadminemail="${1#*=}"; shift 1;;
+	    --type=*) eetype="--type=${1#*=}"; shift 1;;
+	    --ssl=*) eessl="--ssl=${1#*=}"; shift 1;;
+	    --le-mail=*) eelemail="--le-email=${1#*=}"; shift 1;;
+	    --admin-email=*) eeadminemail="--admin-email=${1#*=}"; shift 1;;
 	    --s3_server_name=*) s3_server_name="${1#*=}"; shift 1;;
 	    --type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
 		## Error handling
@@ -37,13 +38,13 @@
 	  esac
 	done
 	echo ":domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
-	exit
+	#exit
 	
     # Load Configuration
     if [[ -r ~/.ee4-backup-settings.conf ]] ; then
-            . ~/.ee4-backup-settings.conf
+         . ~/.ee4-backup-settings.conf
     else
-            echo "ERROR - Settings file not found or not readable."; exit 1
+         echo "ERROR - Settings file not found or not readable."; exit 1
     fi
 
 	ee config set le-mail $le_email
@@ -54,26 +55,26 @@
 	# Check site exists and delete
 	if [ -d "/opt/easyengine/sites/$domain" ]; then
 		echo delete $domain
-	    	ee site delete $domain --yes
+	    ee site delete $domain --yes
 	fi
 
 	# Create the site
 	echo Create $domain
-	ee site create $domain --type=$eetype --ssl=$eessl --le-email=$eelemail --admin-email=$eeadminemail $eecache $eewildcard
+	ee site create $domain $eetype $eessl $eelemail $eeadminemail $eecache $eewildcard
 
 	# Restore the site
 	echo Restoring $domain htdocs
 	restore_htdocs
 
 	# Restore the database if specified
-	if [ -n "$2" ]; then
+	if [ $eetype = --type=wp ]; then
 	        db_user=`ee site info $domain | grep 'DB User' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
         	db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                wp_user=`ee site info $domain | grep 'WordPress Username' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                wp_pass=`ee site info $domain | grep 'WordPress Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                wp_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
+            wp_user=`ee site info $domain | grep 'WordPress Username' | awk -F '|' '{print $3}' | awk '{print $1}'`
+            wp_pass=`ee site info $domain | grep 'WordPress Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
+            wp_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
 		echo Restoring $domain database
 		restore_db
 	fi
@@ -118,7 +119,7 @@ function restore_db {
 	## Build a filename without the .gpg
 	dbfile2=${dbfile/.sql.gz.gpg/.sql.gz}
 	## Now build a filename without the .gz
-        dbfile3=${dbfile2/.sql.gz/.sql}
+    dbfile3=${dbfile2/.sql.gz/.sql}
 	## Download the newest database backup
 	aws s3 cp $s3options s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
 	## Decrypt
@@ -130,7 +131,7 @@ function restore_db {
 	rm /opt/easyengine/sites/$domain/app/$dbfile3
 	## Fix ee site info WP User & Password
 	ee shell $domain --command="wp user create $wp_user $wp_email --user_pass=$wp_pass --role=administrator"
-        ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
+    ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
 	#ee shell 11r.com --command="wp user delete test@example.com --yes"
 }
 
