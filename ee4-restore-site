@@ -7,14 +7,21 @@
 
 function main {
 
+    # Load Configuration
+    if [[ -r ~/.ee4-backup-settings.conf ]] ; then
+         . ~/.ee4-backup-settings.conf
+    else
+         echo "ERROR - Settings file not found or not readable."; exit 1
+    fi
+
 	# Params:
-	#        $1 = domain name --domain=example.tld
-	#        $2 = site type --type=wp | --type=php | --type=html
-	#        $3 = redis cache --cache
-	#        $4 = letsencrypt --ssl=le & --wildcard | --ssl=self
-	#        $5 = letsencrypt email --le-mail=webmaster@example.com
-	#        $6 = admin email --admin-email=admin@example.com
-	#        $7 = backup server name --s3_server_name=hosting1 (optional restore from a different server backup)
+	#  $1 = domain name --domain=example.tld
+	#  $2 = site type --type=wp | --type=php | --type=html
+	#  $3 = redis cache --cache
+	#  $4 = letsencrypt --ssl=le & --wildcard | --ssl=self
+	#  $5 = letsencrypt email --le-mail=webmaster@example.com
+	#  $6 = admin email --admin-email=admin@example.com
+	#  $7 = backup server name --s3_server_name=hosting1 (optional restore from a different server backup)
 
 	## Argument pre-processing
 	while [ "$#" -gt 0 ]; do
@@ -30,60 +37,42 @@ function main {
 	    --ssl=*) eessl="--ssl=${1#*=}"; shift 1;;
 	    --le-mail=*) eelemail="--le-email=${1#*=}"; shift 1;;
 	    --admin-email=*) eeadminemail="--admin-email=${1#*=}"; shift 1;;
-	    --s3_server_name=*) s3_server_name="${1#*=}"; shift 1;;
+	    --s3_server_name=*) server_name="${1#*=}"; shift 1;; ## Override server_name from settings file
 	    --type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
 		## Error handling
 	    -*) echo "unknown option: $1" >&2; exit 1;;
 	    *) handle_argument "$1"; shift 1;;
 	  esac
 	done
-	echo ":domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
-	#exit
+	echo "DEBUG - :domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
 	
-    # Load Configuration
-    if [[ -r ~/.ee4-backup-settings.conf ]] ; then
-         . ~/.ee4-backup-settings.conf
-    else
-         echo "ERROR - Settings file not found or not readable."; exit 1
-    fi
-
+	## Global LetsEncrypt email address from settings file
 	ee config set le-mail $le_email
 
-    db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
+	## Determine container ids for shell commands
+    db_container=`docker ps | grep services_global-db | awk  '{print $1}'`
     proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 
-	# Check site exists and delete
+	# Check site exists and delete. REVISE to use ee site command.
 	if [ -d "/opt/easyengine/sites/$domain" ]; then
 		echo delete $domain
 	    ee site delete $domain --yes
 	fi
 
-	# Create the site
-	echo Create $domain
+	## Create the site
 	ee site create $domain $eetype $eessl $eelemail $eeadminemail $eecache $eewildcard
 
-	# Restore the site
-	echo Restoring $domain htdocs
+	## Restore the site
 	restore_htdocs
 
-	# Restore the database if specified
+	## Restore a WordPress site
 	if [ $eetype = --type=wp ]; then
-	        db_user=`ee site info $domain | grep 'DB User' | awk -F '|' '{print $3}' | awk '{print $1}'`
-        	db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
-        	db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
-        	db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
-            wp_user=`ee site info $domain | grep 'WordPress Username' | awk -F '|' '{print $3}' | awk '{print $1}'`
-            wp_pass=`ee site info $domain | grep 'WordPress Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
-            wp_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
-		echo Restoring $domain database
+		get_vars
 		restore_db
+		restore_required_plugins
 	fi
 
-	## Install any new plugins
-	#ee shell $domain --command="wp plugin install https://downloads.wordpress.org/plugin/machete.zip --force --activate"
-
 	## Enable the admin tools
-	echo Enabling admin tools for $domain
 	ee admin-tools enable $domain
 
 } #main
@@ -95,7 +84,7 @@ function restore_htdocs {
 	## Determine the newest site backup file
 	sitefile=`aws s3 ls s3://$bucket/$server_name/$htdoc_backup_folder/$domain/ | awk '{print $4}' | tail -1`
 	## Download if needed the site backup file
-        if [ ! -f $tmp/$sitefile ]; then
+    if [ ! -f $tmp/$sitefile ]; then
 		aws s3 cp s3://$bucket/$server_name/$htdoc_backup_folder/$domain/$sitefile $tmp/
 	fi
 
@@ -121,18 +110,34 @@ function restore_db {
 	## Now build a filename without the .gz
     dbfile3=${dbfile2/.sql.gz/.sql}
 	## Download the newest database backup
-	aws s3 cp $s3options s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
+    if [ ! -f /opt/easyengine/sites/$domain/app/$dbfile ]; then
+		aws s3 cp $s3options s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
+	fi
 	## Decrypt
 	gpg --decrypt /opt/easyengine/sites/$domain/app/$dbfile > /opt/easyengine/sites/$domain/app/$dbfile2
 	## Decompress
 	gunzip /opt/easyengine/sites/$domain/app/$dbfile2
 	## Restore the datbase into the container
 	ee shell $domain --command="mysql -h $db_host -u $db_user -p$db_password $db_name < ../$dbfile3"
-	rm /opt/easyengine/sites/$domain/app/$dbfile3
+	rm /opt/easyengine/sites/$domain/app/$dbfile3*
 	## Fix ee site info WP User & Password
 	ee shell $domain --command="wp user create $wp_user $wp_email --user_pass=$wp_pass --role=administrator"
     ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
 	#ee shell 11r.com --command="wp user delete test@example.com --yes"
 }
 
+function restore_required_plugins {
+	## Install any required plugins
+	#ee shell $domain --command="wp plugin install https://downloads.wordpress.org/plugin/machete.zip --force --activate"
+}
+
+function get_vars {
+	db_user=`ee site info $domain | grep 'DB User' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	db_password=`ee site info $domain | grep 'DB Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	db_host=`ee site info $domain | grep 'DB Host' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	db_name=`ee site info $domain | grep 'DB Name' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	wp_user=`ee site info $domain | grep 'WordPress Username' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	wp_pass=`ee site info $domain | grep 'WordPress Password' | awk -F '|' '{print $3}' | awk '{print $1}'`
+	wp_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
+}
 main "$@"
