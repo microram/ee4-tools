@@ -2,7 +2,9 @@
 
 A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
 
-The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script that are uploaded in separate well organized folders. Daily full uploads are the opposite of other projects that attempt to create incremental backups. Glacier storage is inexpensive and nicely immutable. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill. Place the ee4-backup-sites v4 script (or backup_sites_s3 & backup_mysql_s3 v3 scripts) in /etc/cron.daily/ for automated backups after your testing.
+The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill. 
+
+Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backup_mysql_s3`) in /etc/cron.daily/ for automated backups after your testing.
 
 ### EasyEngine v4 Tools
 
