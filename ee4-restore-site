@@ -25,24 +25,24 @@ function main {
 
 	## Argument pre-processing
 	while [ "$#" -gt 0 ]; do
-	  case "$1" in
-	    ## Short param method 
-	    #-s) shortname="$2"; shift 2;;
-	    ## No arguments
-	    --cache) eecache="--cache"; shift 1;;
-	    --wildcard) eewildcard="--wildcard"; shift 1;;
-	    ## Argument = required
-	    --domain=*) domain="${1#*=}"; shift 1;;
-	    --type=*) eetype="--type=${1#*=}"; shift 1;;
-	    --ssl=*) eessl="--ssl=${1#*=}"; shift 1;;
-	    --le-mail=*) eelemail="--le-email=${1#*=}"; shift 1;;
-	    --admin-email=*) eeadminemail="--admin-email=${1#*=}"; shift 1;;
-	    --s3_server_name=*) server_name="${1#*=}"; shift 1;; ## Override server_name from settings file
-	    --type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
-		## Error handling
-	    -*) echo "unknown option: $1" >&2; exit 1;;
-	    *) handle_argument "$1"; shift 1;;
-	  esac
+		case "$1" in
+			## Short param method 
+			#-s) shortname="$2"; shift 2;;
+			## No arguments
+			--cache) eecache="--cache"; shift 1;;
+			--wildcard) eewildcard="--wildcard"; shift 1;;
+			## Argument = required
+			--domain=*) domain="${1#*=}"; shift 1;;
+			--type=*) eetype="--type=${1#*=}"; shift 1;;
+			--ssl=*) eessl="--ssl=${1#*=}"; shift 1;;
+			--le-mail=*) eelemail="--le-email=${1#*=}"; shift 1;;
+			--admin-email=*) eeadminemail="--admin-email=${1#*=}"; shift 1;;
+			--s3_server_name=*) server_name="${1#*=}"; shift 1;; ## Override server_name from settings file
+			--type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
+			## Error handling
+			-*) echo "unknown option: $1" >&2; exit 1;;
+			*) handle_argument "$1"; shift 1;;
+		esac
 	done
 	echo "DEBUG - :domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
 	
@@ -50,13 +50,13 @@ function main {
 	ee config set le-mail $le_email
 
 	## Determine container ids for shell commands
-    db_container=`docker ps | grep services_global-db | awk  '{print $1}'`
-    proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
+	db_container=`docker ps | grep services_global-db | awk  '{print $1}'`
+	proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 
 	# Check site exists and delete. REVISE to use ee site command.
 	if [ -d "/opt/easyengine/sites/$domain" ]; then
 		echo delete $domain
-	    ee site delete $domain --yes
+		ee site delete $domain --yes
 	fi
 
 	## Create the site
@@ -84,7 +84,7 @@ function restore_htdocs {
 	## Determine the newest site backup file
 	sitefile=`aws s3 ls s3://$bucket/$server_name/$htdoc_backup_folder/$domain/ | awk '{print $4}' | tail -1`
 	## Download if needed the site backup file
-    if [ ! -f $tmp/$sitefile ]; then
+	if [ ! -f $tmp/$sitefile ]; then
 		aws s3 cp s3://$bucket/$server_name/$htdoc_backup_folder/$domain/$sitefile $tmp/
 	fi
 
@@ -96,7 +96,7 @@ function restore_htdocs {
 	## Fix file and folder permissions
 	find /opt/easyengine/sites/$domain/app/htdocs/ -type f -exec chmod 644 {} \;
 	find /opt/easyengine/sites/$domain/app/htdocs/ -type d -exec chmod 755 {} \;
- 	chown -Rf www-data:www-data /opt/easyengine/sites/$domain/app/htdocs/
+	chown -Rf www-data:www-data /opt/easyengine/sites/$domain/app/htdocs/
 	rm $tmp/$domain*
 }
 
@@ -108,9 +108,9 @@ function restore_db {
 	## Build a filename without the .gpg
 	dbfile2=${dbfile/.sql.gz.gpg/.sql.gz}
 	## Now build a filename without the .gz
-    dbfile3=${dbfile2/.sql.gz/.sql}
+	dbfile3=${dbfile2/.sql.gz/.sql}
 	## Download the newest database backup
-    if [ ! -f /opt/easyengine/sites/$domain/app/$dbfile ]; then
+	if [ ! -f /opt/easyengine/sites/$domain/app/$dbfile ]; then
 		aws s3 cp $s3options s3://$bucket/$server_name/$db_backup_folder/$domain/$dbfile /opt/easyengine/sites/$domain/app/
 	fi
 	## Decrypt
@@ -122,7 +122,7 @@ function restore_db {
 	rm /opt/easyengine/sites/$domain/app/$dbfile3*
 	## Fix ee site info WP User & Password
 	ee shell $domain --command="wp user create $wp_user $wp_email --user_pass=$wp_pass --role=administrator"
-    ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
+	ee shell $domain --command="wp user update $wp_email --user_pass=$wp_pass --skip-email"
 	#ee shell 11r.com --command="wp user delete test@example.com --yes"
 }
 
