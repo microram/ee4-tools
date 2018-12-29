@@ -21,14 +21,14 @@ main() {
 		echo Working on: $domain
 
 		## Prepare automated restore list
-                site_lessl=`ee site info $domain | grep 'SSL' | head -n 1 | awk -F '|' '{print $3}' | awk '{print $1}'`
-                site_wcssl=`ee site info $domain | grep 'Wildcard' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                site_cache=`ee site info $domain | grep 'Cache' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                site_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
-                if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
-                if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
-                if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
-                echo ee4-restore-site --domain=$domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
+		site_lessl=`ee site info $domain | grep 'SSL' | head -n 1 | awk -F '|' '{print $3}' | awk '{print $1}'`
+		site_wcssl=`ee site info $domain | grep 'Wildcard' | awk -F '|' '{print $3}' | awk '{print $1}'`
+		site_cache=`ee site info $domain | grep 'Cache' | awk -F '|' '{print $3}' | awk '{print $1}'`
+		site_email=`ee site info $domain | grep 'E-Mail' | awk -F '|' '{print $3}' | awk '{print $1}'`
+		if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
+		if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
+		if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
+		echo ee4-restore-site --domain=$domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
 
 		## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql
@@ -62,14 +62,14 @@ main() {
 		## Cleanup
 		rm $tmp/$filename*
 
-        	## Backup LetsEncrypt certs
+		## Backup LetsEncrypt certs
 		if [ $site_lessl == Enabled ]; then
-        		lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+			lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
 			docker exec $proxy_container bash -c "cd /etc/nginx && tar --ignore-failed-read --atime-preserve -czf /tmp/$lefilename conf.d/$domain-*.conf certs/$domain.*"
-        		docker cp $proxy_container:/tmp/$lefilename $tmp/
+			docker cp $proxy_container:/tmp/$lefilename $tmp/
 			nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$lefilename
-        		aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$server_name/$le_backup_folder/$domain/
-        		aws s3 ls s3://$bucket/$server_name/$le_backup_folder/$domain/$lefilename.gpg
+			aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$server_name/$le_backup_folder/$domain/
+			aws s3 ls s3://$bucket/$server_name/$le_backup_folder/$domain/$lefilename.gpg
 			rm $tmp/$lefilename
 		fi
 
@@ -84,9 +84,9 @@ main() {
 	done
 
 	## Finish the restorelist file
-        aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$server_name/$restorelist_backup_folder/
-        aws s3 ls s3://$bucket/$server_name/$restorelist_backup_folder/$rlfilename
-        rm $tmp/$rlfilename
+	aws s3 cp $s3options $tmp/$rlfilename s3://$bucket/$server_name/$restorelist_backup_folder/
+	aws s3 ls s3://$bucket/$server_name/$restorelist_backup_folder/$rlfilename
+	rm $tmp/$rlfilename
 
 
 }
