@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/bash
 
 ## Build a UFW whitelist for CloudFlare & UptimeRobot. 
 ##   ** NO DIRECT 80,443 access to this server ** 
