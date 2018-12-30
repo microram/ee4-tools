@@ -2,9 +2,13 @@ A mostly working collection of scripts for managing an [EasyEngine](https://easy
 
 The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill.
 
+The server setup script is designed to start with a fresh Ubuntu 18.04 vm. It will install EasyEngine v4. Then it will run the cloudflare-ufw script to lock down the server. The backup script will be placed in /etc/cron.daily/ ready to run the next nightly backup. The restore script will be ready with the most recent restorelist ready to restore all websites last backed up to this server by name. This script is designed to quickly bring a server full of WordPress websites back online from nothing but your backups.
+
+We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTPS access to the server via CloudFlare which greatly reduces the attack surface. The free Cloudflare tier is more than enough for most WordPress sites. Simply move your [DNS](https://support.cloudflare.com/hc/en-us/articles/201720164-Step-2-Create-a-Cloudflare-account-and-add-a-website) hosting to Cloudflare. Set the A/AAAA/CNAME record to [orange](https://support.cloudflare.com/hc/en-us/articles/200169626-What-subdomains-are-appropriate-for-orange-gray-clouds-). Now your sites pass through Cloudflare protection and you get free [caching](https://support.cloudflare.com/hc/en-us/articles/200172516-Which-file-extensions-does-Cloudflare-cache-for-static-content-)!
+
 ### EasyEngine v4 Tools
 
-- Server setup script (Ubuntu 18.04)
+- Server setup script. Restore an entire server from scratch.
 - VPS cloud-init (All secrets needed for setup can be pasted into lauch script box *except GPG)
 - Restore from v3 backup to v4 server
 - Restore from v4 backup (Now working. See usage notes below)
