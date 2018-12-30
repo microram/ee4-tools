@@ -9,10 +9,12 @@ Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backu
 ### EasyEngine v4 Tools
 
 - Server setup script (Ubuntu 18.04)
+- VPS cloud-init (All secrets needed for setup can be pasted into lauch script box *except GPG)
 - Restore from v3 backup to v4 server
 - Restore from v4 backup (Now working. See usage notes below)
 - Backup htdocs, database & LetsEncrypt certs (compress, encrypt, and upload to Amazon S3)
 - Create server rebuild script for disaster recovery (restorelist.sh)
+- CloudFlare UFW IP address whitelist script completely re-written
 
 ### EasyEngine v3 Tools
 
@@ -20,7 +22,6 @@ Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backu
 - Backup all MySQL databases to S3 (EasyEngine not required)
 - Restore a single WordPress site from S3
 - Create a full server restore list with EasyEngine parapmeters (ex. --wp)
-- CloudFlare UFW IP address whitelist script
 - Create an uncolorized EasyEngine site list
 - Fix the ownership (chown) of files based on the parent folder
 - LetsEncrypt Delete, Renew and Status scripts
@@ -30,13 +31,13 @@ Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backu
 
 ## Getting Started
 
-Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment.  
+Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment.
 
 No support available. Use at your own risk.
 
 All scripts are expected to be mostly working at this time. You should be able to backup and restore.
 
-The ee4-restore-site script is now working. More work is needed on better handling of command line options.
+The ee4-restore-site script is now working. Command line options are now mostly working.
 
 #### Usage Examples
 
@@ -45,14 +46,15 @@ The ee4-restore-site script is now working. More work is needed on better handli
 
 #### Coming soon
 
---s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
+- [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
+- [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
+- [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.
+- [x] easier setup from scratch.
+- [x] Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
+- [ ] GPG credentials in cloud-init
+- [ ] All scripts needs standardization cleanup
+- [ ] Possible reorganization of v3 to v4 scripts
 
-#### Coming later 
-
-- Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.  
-- Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths. 
-- More fit & finish with easier setup from scratch. 
-- Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
 
 ### Prerequisites
 
@@ -66,15 +68,26 @@ Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be remove
 
 ### Installing v4
 
+#### New Server
+
 1. Copy the cloud-init file into a text editor of your choice.
 2. Edit the email, S3 bucket and AWS access codes as needed.
 3. Create a new Ubuntu 18.04 VPS.
-4. Paste the cloud-init code into the Launch Script[^1] box.
+4. Paste the cloud-init code into the Launch Script* box.
 5. Launch your VPS. Setup time is 3-5 minutes. The server will reboot once if needed.
 6. Login via SSH.
 7. If possibe, the newest site restorelist will be placed in the root folder. Run the restorelist-xxxxxxxx.sh to restore all the websites.
 
-[^1] Tested with Amazon Lightsail Launch Script. Digital Ocean calls this 'User data'. Others should be compatible. Untested at this time.
+* Tested with Amazon Lightsail Launch Script. Digital Ocean calls this 'User data'. Others should be compatible. Untested at this time.
+
+#### Existing Server
+
+1. Login via SSH.
+2. Clone this repository `git clone https://github.com/microram/ee4-tools.git`
+3. Copy the .ee4-backup-settings.conf to /root
+4. Edit the .ee4-backup-settings.conf as needed
+5. Backup your server with ee4-backup-sites manually (run as root. don't forget to `chmox +x ee4-backup-sites`)
+6. Place the ee4-backup-sites in /etc/cron.daily to automate
 
 ### Installing v3
 
