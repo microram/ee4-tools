@@ -2,21 +2,19 @@
 ## Usage: cloudflare-ufw
 ## UFW firewall setup for Cloudflare proxied websites. 
 
-# Remove old backups
+## Remove old backups
 rm /etc/ufw/{after,after6,before,before6,user,user6}.rules.*
 
-# UFW reset rules
+## UFW reset rules
 ufw --force reset
 
-# UFW allow LIMITed SSH access
+## UFW allow LIMITed SSH access
 ufw limit ssh
 
-# UFW Whitelist Cloudflare IPv4
-for ip in $(curl https://www.cloudflare.com/ips-v4); do ufw allow from ${ip} to any port 80,443 proto tcp; done
-# UFW Whitelist Cloudflare IPv6
-for ip in $(curl https://www.cloudflare.com/ips-v6); do ufw allow from ${ip} to any port 80,443 proto tcp; done
-# UFW Whitelist UptimeRobot IPv4 (Fix CRLF/LF)
-for ip in $(curl https://uptimerobot.com/inc/files/ips/IPv4.txt | tr -d '\r'); do ufw allow from ${ip} to any port 80,443 proto tcp; done
+## UFW Whitelist Cloudflare IPv4 & IPv6 https://www.cloudflare.com/ips/
+for ip in $(curl https://www.cloudflare.com/ips-v{4,6}); do ufw allow from ${ip} to any port 80,443 proto tcp; done
+## UFW Whitelist UptimeRobot IPv4 (Fix CRLF/LF) https://uptimerobot.com/locations
+for ip in $(curl https://uptimerobot.com/inc/files/ips/IPv4andIPv6.txt | tr -d '\r'); do ufw allow from ${ip} to any port 80,443 proto tcp; done
 
-# ENABLE UFW Firewall
+## ENABLE UFW Firewall
 ufw --force enable
