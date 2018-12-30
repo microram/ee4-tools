@@ -2,19 +2,9 @@
 ## Usage: ee4-setup-server
 ## Ubuntu 18.04 - EasyEngine v4 - WordPress hosting server init script
 
-## Defaults to avoid prompt during ee install
-echo "[user]" > /root/.gitconfig
-echo "name = Hosting Co." >> /root/.gitconfig
-echo "email = webmaster@example.com" >> /root/.gitconfig
-
-## Set AWS Credentials
-mkdir /root/.aws
-echo "[default]" > /root/.aws/config
-echo "aws_access_key_id=XXXXXXXXXXXXXXX" >> /root/.aws/config
-echo "aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYY" >> /root/.aws/config
-
-## Set the GPG Keys
-## TODO
+## Git defaults to avoid prompt during ee install
+git_name=Hosting Co.
+git_email=webmaster@example.com
 
 ## GPG Public Key
 gpg_pub_email=webmaster@example.com
@@ -27,9 +17,28 @@ bucket=backup-bucket
 
 ## S3 base folder name. Typically the server name. 
 server_name=hosting1
+aws_access_key_id=XXXXXXXXXXXXXX
+aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYY
 
 ## No editing below this line needed
 ## ---------------------------------
+
+##wget -qO /root/ee4-setup-server https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-setup-server && sudo bash /root/ee4-setup-server
+## TODO - Break here. Top half will become cloud-init with user secrets, download this script and run it. This script is getting too long for cloud-init.
+
+## Defaults to avoid prompt during ee install
+echo "[user]" > /root/.gitconfig
+echo "name = $git_name" >> /root/.gitconfig
+echo "email = $git_email" >> /root/.gitconfig
+
+## Set AWS Credentials
+mkdir /root/.aws
+echo "[default]" > /root/.aws/config
+echo "aws_access_key_id=$aws_access_key_id" >> /root/.aws/config
+echo "aws_secret_access_key=$aws_secret_access_key" >> /root/.aws/config
+
+## Set the GPG Keys
+## TODO
 
 ## Update Ubuntu
 export DEBIAN_FRONTEND=noninteractive
@@ -61,10 +70,18 @@ wget -qO /root/ee4-restore-site https://raw.githubusercontent.com/microram/ee4-t
 wget -qO /root/ee4-restore-from-v3-site https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-restore-from-v3-site && chmod +x /root/ee4-restore-from-v3-site
 
 ## Fix up the settings file
-## TODO
+sed -i -e "s/gpg_pub_email=webmaster@example.com/gpg_pub_email=$gpg_pub_email/g" /root/.ee4-backup-settings.conf
+sed -i -e "s/le_email=webmaster@example.com/le_email=$le_email/g" /root/.ee4-backup-settings.conf
+sed -i -e "s/bucket=backup-bucket/bucket=$bucket/g" /root/.ee4-backup-settings.conf
+sed -i -e "s/server_name=hosting1/server_name=$server_name/g" /root/.ee4-backup-settings.conf
 
-## Get the newest restorelist
-## TODO
+## Load the settings and Download the newest restorelist
+if [[ -r ~/.ee4-backup-settings.conf ]] ; then
+	. ~/.ee4-backup-settings.conf
+	restorefile=`aws s3 ls s3://$bucket/$server_name/$restorelist_backup_folder/ | awk '{print $4}' | tail -1`
+	aws s3 cp $s3options s3://$bucket/$server_name/$restorelist_backup_folder/$restorefile /root/
+	chmod +x /root/$restorefile
+fi
 
 ## Check for reboot after ee install
 if [[ -f /var/run/reboot-required ]]
