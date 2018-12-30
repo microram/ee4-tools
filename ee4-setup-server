@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## Usage: ee4-setup-server
-## Ubuntu 18.04 - EasyEngine v4 - WordPress hosting server init script
+## Ubuntu 18.04 - EasyEngine v4 - WordPress hosting server initial setup script
 
 ## Defaults to avoid prompt during ee install
 echo "[user]" > /root/.gitconfig
