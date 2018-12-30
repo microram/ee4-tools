@@ -6,6 +6,16 @@
 ## Usage: Start with a clean ufw rules list. Run 'ufw enable && ufw reset' first.
 ## Note: This script works, but could use some cleanup. Not sure where I found this script.
 
+
+# Remove all previous rules
+ufw --force reset
+
+# Enable UFW Firewall
+ufw enable
+
+# Add limited ssh access. Control also from AWS Lightsail master firewall
+ufw limit ssh
+
 DIR="$(dirname $(readlink -f $0))"
 cd $DIR
 wget https://www.cloudflare.com/ips-v4 -O ips-v4.tmp
@@ -18,9 +28,6 @@ mv ips-v6.tmp ips-v6
 
 # Adjust uptimerobot ips to linux line endings
 tr -d '\015' <ips-ur.tmp >ips-ur
-
-# Add limited ssh access. Control also from AWS Lightsail master firewall
-ufw limit ssh
 
 # Add IPv4 rules ufw allow from 8.8.8.8 to any port 80,443 proto tcp
 for cfip in `cat ips-v4`; do ufw allow from $cfip to any port 80,443 proto tcp; done
