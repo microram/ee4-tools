@@ -34,7 +34,7 @@ pip install awscli
 wget -qO ee rt.cx/ee4 && sudo bash ee
 
 ## UFW firewall setup. All websites require CloudFlare proxy
-wget -qO /etc/cron.weekly/cloudflare-ufw https://raw.githubusercontent.com/microram/ee4-tools/master/cloudflare-ufw && chmod +x /etc/cron.weekly/cloudflare-ufw && sudo bash /etc/cron.weekly/cloudflare-ufw
+wget -qO /etc/cron.weekly/cloudflare-ufw https://raw.githubusercontent.com/microram/ee4-tools/master/cloudflare-ufw && chmod +x /etc/cron.weekly/cloudflare-ufw && sudo bash /etc/cron.weekly/cloudflare-ufw && ln -s /etc/cron.weekly/cloudflare-ufw /root/cloudflare-ufw
 
 ## Get the site settings file
 wget -qO /root/.ee4-backup-settings.conf https://raw.githubusercontent.com/microram/ee4-tools/master/.ee4-backup-settings.conf && chmod 600 /root/.ee4-backup-settings.conf
