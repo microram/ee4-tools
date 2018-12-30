@@ -2,7 +2,7 @@
 
 A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
 
-The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill. 
+The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill.
 
 Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backup_mysql_s3`) in /etc/cron.daily/ for automated backups after your testing.
 
@@ -22,7 +22,7 @@ Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backu
 - Create a full server restore list with EasyEngine parapmeters (ex. --wp)
 - CloudFlare UFW IP address whitelist script
 - Create an uncolorized EasyEngine site list
-- Fix the ownership (chown) of files based on the parent folder 
+- Fix the ownership (chown) of files based on the parent folder
 - LetsEncrypt Delete, Renew and Status scripts
 - Check the WordPress version on all sites
 - Update the WordPress version on all sites suitable for cron
@@ -36,7 +36,7 @@ No support available. Use at your own risk.
 
 All scripts are expected to be mostly working at this time. You should be able to backup and restore.
 
-The ee4-restore-site script is now working. More work is needed on better handling of command line options. 
+The ee4-restore-site script is now working. More work is needed on better handling of command line options.
 
 #### Usage Examples
 
@@ -64,11 +64,21 @@ Tested with Ubuntu 18.04 on Amazon LightSail & Amazon S3 for backup storage.
 
 Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be removed in future updates.
 
-### Installing
+### Installing v4
 
-Edit the .backup_sites_mysql_s3.conf & .ee4-backup-settings.conf files first. Then edit and review each script before using. Some scripts still have hard coded folders at this time. 
+1. Copy the cloud-init file into a text editor of your choice.
+2. Edit the email, S3 bucket and AWS access codes as needed.
+3. Create a new Ubuntu 18.04 VPS.
+4. Paste the cloud-init code into the Launch Script[^1] box.
+5. Launch your VPS. Setup time is 3-5 minutes. The server will reboot once if needed.
+6. Login via SSH.
+7. If possibe, the newest site restorelist will be placed in the root folder. Run the restorelist-xxxxxxxx.sh to restore all the websites.
 
-Then run ee4-server-setup on your fresh Ubuntu 18.04 VPS.
+[^1] Tested with Amazon Lightsail Launch Script. Digital Ocean calls this 'User data'. Others should be compatible. Untested at this time.
+
+### Installing v3
+
+Edit the .backup_sites_mysql_s3.conf file first. Then edit and review each script before using. Some scripts still have hard coded folders at this time.
 
 Setup or import a GPG public key. Don't forget to backup this key. You will need the secret private key only for restores.
 

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+## cloud-init start copy and paste this into cloud init script. The below () parenthesis are required. 
+(
+## Default email or use different emails below
+export default_email=webmaster@example.com
+
+## S3 bucket (no folders)
+export bucket=backup-bucket
+## S3 base folder name. Typically the server name.
+export server_name=hosting1
+## S3 access keys
+export aws_access_key_id=XXXXXXXXXXXXXXXXXXXX
+export aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+
+## Git defaults to avoid prompt during ee install
+export git_name=$default_email
+export git_email=$default_email
+
+## GPG Public Key
+export gpg_pub_email=$default_email
+
+## Lets Encrypt Email Address
+export le_email=$default_email
+
+wget -qO /root/ee4-setup-server https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-setup-server && chmod +x /root/ee4-setup-server
+/root/ee4-setup-server
+)
+## cloud-init end copy and paste
