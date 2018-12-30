@@ -1,5 +1,6 @@
-#!/bin/bash
-## EASYENGINE.IO Server prep v4 BETA
+#!/usr/bin/env bash
+## Usage: ee4-setup-server
+## Ubuntu 18.04 - EasyEngine v4 - WordPress hosting server init script
 
 ## Defaults to avoid prompt during ee install
 echo "[user]" > /root/.gitconfig
@@ -12,7 +13,13 @@ echo "[default]" > /root/.aws/config
 echo "aws_access_key_id=XXXXXXXXXXXXXXX" >> /root/.aws/config
 echo "aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYY" >> /root/.aws/config
 
-## Update Ubuntu 18.04
+## Set the GPG Keys
+## TODO
+
+## No editing below this line needed
+## ---------------------------------
+
+## Update Ubuntu
 export DEBIAN_FRONTEND=noninteractive
 export DEBIAN_PRIORITY=critical
 sudo -E apt-get -qy update
@@ -24,48 +31,30 @@ apt-get install -y python-pip
 pip install awscli
 
 ## Install EasyEngine.io v4
-wget -qO ee rt.cx/ee4 && sudo bash ee  
+wget -qO ee rt.cx/ee4 && sudo bash ee
 
-## All websites require CloudFlare proxy ufw firewall setup
-wget -qO /etc/cron.weekly/cloudflare-ufw https://raw.githubusercontent.com/microram/ee4-tools/master/cloudflare-ufw && chmod +x /etc/cron.weekly/cloudflare-ufw && sudo bash /etc/cron.weekly cloudflare-ufw 
+## UFW firewall setup. All websites require CloudFlare proxy
+wget -qO /etc/cron.weekly/cloudflare-ufw https://raw.githubusercontent.com/microram/ee4-tools/master/cloudflare-ufw && chmod +x /etc/cron.weekly/cloudflare-ufw && sudo bash /etc/cron.weekly/cloudflare-ufw
 
 ## Get the site settings file
-aws s3 cp s3://bucketname/scripts/.backup_sites_mysql_s3.conf /root/
-chmod 400 /root/.backup_sites_mysql_s3.conf
-if [[ -r /root/.backup_sites_mysql_s3.conf ]] ; then
-    . /root/.backup_sites_mysql_s3.conf
-else
-    echo "ERROR - Settings file not found or not readable."
-	#; exit 1
-fi
+wget -qO /root/.ee4-backup-settings.conf https://raw.githubusercontent.com/microram/ee4-tools/master/.ee4-backup-settings.conf && chmod 600 /root/.ee4-backup-settings.conf
 
+## Get the backup script. Place in /etc/cron.daily/ and ln in root
+wget -qO /etc/cron.daily/ee4-backup-sites https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-backup-sites && chmod +x /etc/cron.daily/ee4-backup-sites && ln -s /etc/cron.daily/ee4-backup-sites /root/ee4-backup-sites
 
-wget https://raw.githubusercontent.com/microram/ee4-tools/master/cloudflare-ufw.sh && sudo bash cloudflare-ufw.sh 
+## Get the restore script. Place in /root
+wget -qO /root/ee4-restore-site https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-restore-site && chmod +x /root/ee4-restore-site
 
-## Get the site deploy script
-#aws s3 cp s3://$bucket/scripts/ee4-restore-site.sh ~/
-#chmod +x ee4-restore-site.sh
+## Get the v3 restore script. Place in /root
+wget -qO /root/ee4-restore-from-v3-site https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-restore-from-v3-site && chmod +x /root/ee4-restore-from-v3-site
 
-## Get the backup scripts and settings
-#aws s3 cp s3://$bucket/scripts/backup_sites_s3 /etc/cron.daily/
-#chmod +x /etc/cron.daily/backup_sites_s3
-#aws s3 cp s3://$bucket/scripts/backup_mysql_s3 /etc/cron.daily/
-#chmod +x /etc/cron.daily/backup_mysql_s3
+## Fix up the settings file
+## TODO
 
-## Get the list of sites to restore
-#restorefile=`aws s3 ls s3://$bucket/$config_base_folder/restorelist/ | awk '{print $4}' | tail -1`
-#aws s3 cp s3://$bucket/$config_base_folder/restorelist/$restorefile ~/
-#chmod +x ~/$restorefile*
+## Get the newest restorelist
+## TODO
 
-## Get the latest LetsEncrypt certs
-#lefile=`aws s3 ls s3://$bucket/$le_base_folder/ | awk '{print $4}' | tail -1`
-#aws s3 cp s3://$bucket/$le_base_folder/$lefile $tmp
-#tar xf $tmp/$lefile* -C /etc/letsencrypt/
-
-## Finished
-#echo "Ready to restore the sites. Run the restorelist next."
 ## Check for reboot after ee install
-
 if [[ -f /var/run/reboot-required ]]
 then 
 	echo "Reboot required before continuing. Please restart this script after reboot."
