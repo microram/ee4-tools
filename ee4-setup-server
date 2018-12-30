@@ -2,30 +2,6 @@
 ## Usage: ee4-setup-server
 ## Ubuntu 18.04 - EasyEngine v4 - WordPress hosting server init script
 
-## Git defaults to avoid prompt during ee install
-git_name=Hosting Co.
-git_email=webmaster@example.com
-
-## GPG Public Key
-gpg_pub_email=webmaster@example.com
-
-## Lets Encrypt Email Address
-le_email=webmaster@example.com
-
-## S3 bucket (no folders)
-bucket=backup-bucket
-
-## S3 base folder name. Typically the server name. 
-server_name=hosting1
-aws_access_key_id=XXXXXXXXXXXXXX
-aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-
-## No editing below this line needed
-## ---------------------------------
-
-##wget -qO /root/ee4-setup-server https://raw.githubusercontent.com/microram/ee4-tools/master/ee4-setup-server && sudo bash /root/ee4-setup-server
-## TODO - Break here. Top half will become cloud-init with user secrets, download this script and run it. This script is getting too long for cloud-init.
-
 ## Defaults to avoid prompt during ee install
 echo "[user]" > /root/.gitconfig
 echo "name = $git_name" >> /root/.gitconfig
