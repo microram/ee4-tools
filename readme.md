@@ -1,10 +1,6 @@
-# ee4-tools
-
 A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
 
 The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill.
-
-Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backup_mysql_s3`) in /etc/cron.daily/ for automated backups after your testing.
 
 ### EasyEngine v4 Tools
 
@@ -29,42 +25,16 @@ Place the `ee4-backup-sites` v4 script (or v3 scripts `backup_sites_s3` & `backu
 - Update the WordPress version on all sites suitable for cron
 - [WordOps](https://wordops.org/) the v3 EasyEngine fork project may be supported in the future
 
-## Getting Started
-
-Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment.
-
-No support available. Use at your own risk.
-
-All scripts are expected to be mostly working at this time. You should be able to backup and restore.
-
-The ee4-restore-site script is now working. Command line options are now mostly working.
-
-#### Usage Examples
-
-    ./ee4-restore-site --domain=example.com --type=wp --cache --ssl=self
-    ./ee4-restore-site --domain=example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
-
-#### Coming soon
-
-- [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
-- [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
-- [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.
-- [x] easier setup from scratch.
-- [x] Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
-- [ ] GPG credentials in cloud-init
-- [ ] All scripts needs standardization cleanup
-- [ ] Possible reorganization of v3 to v4 scripts
-
-
 ### Prerequisites
 
-[EasyEngine](https://easyengine.io) v3 or v4
+- [EasyEngine](https://easyengine.io) v3 or v4
+- Tested on EasyEngine v4.0.9
+- Tested with Ubuntu 18.04 on Amazon LightSail & Amazon S3 for backup storage.
+- Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be removed in future updates.
 
-Tested on EasyEngine v4.0.8
+## Getting Started
 
-Tested with Ubuntu 18.04 on Amazon LightSail & Amazon S3 for backup storage.
-
-Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be removed in future updates.
+Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment. Sorry, No support available. Use at your own risk. All scripts are expected to be mostly working at this time. You should be able to backup and restore.
 
 ### Installing v4
 
@@ -96,6 +66,22 @@ Edit the .backup_sites_mysql_s3.conf file first. Then edit and review each scrip
 Setup or import a GPG public key. Don't forget to backup this key. You will need the secret private key only for restores.
 
 Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder. 
+
+#### Restore Usage Examples
+
+    ./ee4-restore-site --domain=example.com --type=wp --cache --ssl=self
+    ./ee4-restore-site --domain=example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
+
+#### Coming soon
+
+- [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
+- [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
+- [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.
+- [x] easier setup from scratch.
+- [x] Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
+- [ ] GPG credentials in cloud-init
+- [ ] All scripts needs standardization cleanup
+- [ ] Possible reorganization of v3 to v4 scripts
 
 ## License
 
