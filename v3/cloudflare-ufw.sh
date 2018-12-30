@@ -11,7 +11,7 @@
 ufw --force reset
 
 # Enable UFW Firewall
-ufw enable
+ufw --force enable
 
 # Add limited ssh access. Control also from AWS Lightsail master firewall
 ufw limit ssh
@@ -40,9 +40,9 @@ for cfip in `cat ips-ur`; do ufw allow from $cfip to any port 80,443 proto tcp; 
 
 ufw reload > /dev/null
 
-rm ips-v4
-rm ips-v6
-rm ips-ur
+rm ips-v4*
+rm ips-v6*
+rm ips-ur*
 
 # OTHER EXAMPLE RULES
 # Examples to retrict to port 80
