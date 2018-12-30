@@ -18,4 +18,4 @@ for ip in `curl https://www.cloudflare.com/ips-v6`; do ufw allow from $ip to any
 for ip in `curl https://uptimerobot.com/inc/files/ips/IPv4.txt | tr -d '\r'`; do ufw allow from $ip to any port 80,443 proto tcp; done
 
 # ENABLE UFW Firewall
-ufw enable
+ufw --force enable
