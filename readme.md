@@ -56,23 +56,35 @@ Please use caution. This script is still under development. Some v3 scripts have
 2. Clone this repository `git clone https://github.com/microram/ee4-tools.git`
 3. Copy the .ee4-backup-settings.conf to /root
 4. Edit the .ee4-backup-settings.conf as needed
-5. Backup your server with ee4-backup-sites manually (run as root. don't forget to `chmox +x ee4-backup-sites`)
-6. Place the ee4-backup-sites in /etc/cron.daily to automate
+5. Setup or import a GPG public key. Don't forget to backup this key. You will need the secret private key only for restores.
+6. Backup your server with `ee4-backup-sites` manually (run as root. don't forget to `chmox +x ee4-backup-sites`)
+7. Place the ee4-backup-sites in /etc/cron.daily to automate
 
 ### Installing v3
 
-Edit the .backup_sites_mysql_s3.conf file first. Then edit and review each script before using. Some scripts still have hard coded folders at this time.
+1. Login via SSH.
+2. Clone this repository `git clone https://github.com/microram/ee4-tools.git`
+3. Edit the .backup_sites_mysql_s3.conf file first. 
+4. Then edit and review each script before using. Some scripts still have hard coded folders at this time.
+5. Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder. 
 
-Setup or import a GPG public key. Don't forget to backup this key. You will need the secret private key only for restores.
+### Restore Usage Examples
 
-Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder. 
-
-#### Restore Usage Examples
+#### Restore v4 site
 
     ./ee4-restore-site --domain=example.com --type=wp --cache --ssl=self
     ./ee4-restore-site --domain=example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
 
-#### Coming soon
+#### Restore v3 site to v4 server
+
+    ./ee4-restore-from-v3-site example.com --type=wp --cache --ssl=self
+    ./ee4-restore-from-v3-site example2.com --type=wp --cache --ssl=le --admin-email=admin@example2.com
+
+#### Restore v3 site
+
+    ../v3/wp-restore-site.sh example.com --wpfc
+
+### Coming soon
 
 - [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
 - [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
