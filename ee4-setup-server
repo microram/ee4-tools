@@ -16,6 +16,18 @@ echo "aws_secret_access_key=YYYYYYYYYYYYYYYYYYYYYYYYYYYYY" >> /root/.aws/config
 ## Set the GPG Keys
 ## TODO
 
+## GPG Public Key
+gpg_pub_email=webmaster@example.com
+
+## Lets Encrypt Email Address
+le_email=webmaster@example.com
+
+## S3 bucket (no folders)
+bucket=backup-bucket
+
+## S3 base folder name. Typically the server name. 
+server_name=hosting1
+
 ## No editing below this line needed
 ## ---------------------------------
 
