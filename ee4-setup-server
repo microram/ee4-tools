@@ -9,9 +9,10 @@ echo "email = $git_email" >> /root/.gitconfig
 
 ## Set AWS Credentials
 mkdir /root/.aws
-echo "[default]" > /root/.aws/config
-echo "aws_access_key_id=$aws_access_key_id" >> /root/.aws/config
-echo "aws_secret_access_key=$aws_secret_access_key" >> /root/.aws/config
+echo "[default]" > /root/.aws/credentials
+echo "aws_access_key_id=$aws_access_key_id" >> /root/.aws/credentials
+echo "aws_secret_access_key=$aws_secret_access_key" >> /root/.aws/credentials
+chmod 400 /root/.aws/credentials
 
 ## Import the public key for backups (restore requires secret private key)
 gpg --import /root/public.key
