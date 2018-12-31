@@ -54,9 +54,9 @@ Please use caution. This script is still under development. Some v3 scripts have
 5. Launch your VPS. Setup time is 3-5 minutes. The server will reboot once if needed.
 6. Login via SSH.
 7. Run the gpg-private script to finish loading private.key if you included it in your cloud-init
-8. If possible, the newest site restorelist will be placed in the root folder. Run the restorelist-xxxxxxxx.sh to restore all the websites.
+8. If possible, the newest site restorelist will be placed in the /root folder. Run the restorelist-xxxxxxxx.sh to restore all the websites.
 
- * Tested with Amazon Lightsail Launch Script. Digital Ocean calls this 'User data'. Others should be compatible. Untested at this time.
+ * Tested with Amazon Lightsail Launch Script. Digital Ocean calls this 'User data'. Others should be compatible but they are untested at this time.
 
 #### Existing Server
 
