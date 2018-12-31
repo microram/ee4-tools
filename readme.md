@@ -1,6 +1,6 @@
 # EasyEngine Tools
 
-A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
+A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future.
 
 The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill.
 
@@ -74,7 +74,7 @@ Please use caution. This script is still under development. Some v3 scripts have
 2. Clone this repository `git clone https://github.com/microram/ee4-tools.git`
 3. Edit the .backup_sites_mysql_s3.conf file first. 
 4. Then edit and review each script before using. Some scripts still have hard coded folders at this time.
-5. Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder. 
+5. Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder.
 
 ### Restore Usage Examples
 
@@ -90,7 +90,7 @@ Please use caution. This script is still under development. Some v3 scripts have
 
 #### Restore v3 site
 
-    ../v3/wp-restore-site.sh example.com --wpfc
+    ./v3/wp-restore-site.sh example.com --wpfc
 
 ### Coming soon
 
