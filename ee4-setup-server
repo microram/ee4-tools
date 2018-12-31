@@ -13,8 +13,8 @@ echo "[default]" > /root/.aws/config
 echo "aws_access_key_id=$aws_access_key_id" >> /root/.aws/config
 echo "aws_secret_access_key=$aws_secret_access_key" >> /root/.aws/config
 
-## Set the GPG Keys
-## TODO
+## Import the public key for backups (restore requires secret private key)
+gpg --import /root/public.key
 
 ## Update Ubuntu
 export DEBIAN_FRONTEND=noninteractive
@@ -26,7 +26,7 @@ sudo -E apt-get -qy autoclean
 ## Install AWS CLI
 apt-get install -y python-pip
 pip install awscli
-
+ 
 ## Install EasyEngine.io v4
 wget -qO ee rt.cx/ee4 && sudo bash ee
 

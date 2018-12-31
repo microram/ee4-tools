@@ -38,7 +38,7 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 
 ## Getting Started
 
-Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment. Sorry, No support available. Use at your own risk. All scripts are expected to be mostly working at this time. You should be able to backup and restore.
+Please use caution. This script is still under development. Some v3 scripts have bucket names/folders hard coded. Development effort is focused on v4 at the moment. Sorry, No support available. Use at your own risk. All scripts are expected to be mostly working at this time. You should be able to backup and restore. Note don't cancel the script while running. EE4 gets corrupted if you mash on Control-C.
 
 ### Installing v4
 
