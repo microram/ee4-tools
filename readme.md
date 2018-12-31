@@ -1,3 +1,5 @@
+# EasyEngine Tools
+
 A mostly working collection of scripts for managing an [EasyEngine](https://easyengine.io) WordPress hosting server. This is not an official project from EasyEngine and may be renamed in the future. 
 
 The backup script creates a full compressed copy of each site to upload to S3. Backups include the site files in the 'htdocs' folder, the MariaDB/MySQL database, the site access log files, the TLS certificates, and an automated full site list restore script.  Daily full site uploads are sent to Amazon S3 in separate well organized folders. This is the opposite of other projects that attempt to create incremental backups. Amazon S3 with Glacier storage is relatively inexpensive. Full site copies along with S3 lifecycle rules offer the storage and retention this project looks to fulfill.
@@ -95,10 +97,12 @@ Please use caution. This script is still under development. Some v3 scripts have
 - [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.
 - [x] easier setup from scratch.
 - [x] Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
-- [ ] GPG credentials in cloud-init
+- [x] GPG public key in cloud-init
 - [ ] All scripts needs standardization cleanup
 - [ ] Possible reorganization of v3 to v4 scripts
-
+- [ ] Restore a site n days prior
+- [ ] Restore a glacier backup (low priority. Keep more hot backups see S3 lifecycle rules)
+ 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
