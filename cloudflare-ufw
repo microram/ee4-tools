@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## Usage: cloudflare-ufw
-## UFW firewall setup for Cloudflare proxied websites. 
+## UFW firewall setup for Cloudflare proxied websites.
 
 ## Remove old backups
 rm /etc/ufw/{after,after6,before,before6,user,user6}.rules.*
