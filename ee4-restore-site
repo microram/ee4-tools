@@ -44,7 +44,7 @@ function main {
 			*) handle_argument "$1"; shift 1;;
 		esac
 	done
-	echo "DEBUG - :domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $s3_server_name  :cache: $eecache  :wildcard: $eewildcard"
+	echo "DEBUG - :domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $server_name  :cache: $eecache  :wildcard: $eewildcard"
 	
 	## Global LetsEncrypt email address from settings file
 	ee config set le-mail $le_email
@@ -129,6 +129,7 @@ function restore_db {
 function restore_required_plugins {
 	## Install any required plugins
 	#ee shell $domain --command="wp plugin install https://downloads.wordpress.org/plugin/machete.zip --force --activate"
+	return;
 }
 
 function get_vars {

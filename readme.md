@@ -12,11 +12,12 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 
 - Server setup script. Restore an entire server from scratch.
 - VPS cloud-init (All secrets needed for setup can be pasted into lauch script box *except GPG)
-- Restore from v3 backup to v4 server
-- Restore from v4 backup (Now working. See usage notes below)
 - Backup htdocs, database & LetsEncrypt certs (compress, encrypt, and upload to Amazon S3)
 - Create server rebuild script for disaster recovery (restorelist.sh)
-- CloudFlare UFW IP address whitelist script completely re-written
+- Restore a site from v3 backup to v4 server
+- Restore a site from v4 backup
+- Restore all sites from v4 backup restorelist
+- CloudFlare UFW IP address whitelist script (completely re-written)
 
 ### EasyEngine v3 Tools
 
@@ -34,7 +35,7 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 ### Prerequisites
 
 - [EasyEngine](https://easyengine.io) v3 or v4
-- Tested on EasyEngine v4.0.9
+- Tested on EasyEngine v3.74 & v4.0.9
 - Tested with Ubuntu 18.04 on Amazon LightSail & Amazon S3 for backup storage.
 - Use AWS S3 cli. S3cmd is no longer supported. References to s3cmd will be removed in future updates.
 

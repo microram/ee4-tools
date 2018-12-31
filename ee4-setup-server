@@ -15,6 +15,9 @@ echo "aws_secret_access_key=$aws_secret_access_key" >> /root/.aws/config
 
 ## Import the public key for backups (restore requires secret private key)
 gpg --import /root/public.key
+## Unable to import private key with password prompt
+#gpg --import --allow-secret-key /root/private.key
+#gpg --import-ownertrust /root/trust.key
 
 ## Update Ubuntu
 export DEBIAN_FRONTEND=noninteractive
