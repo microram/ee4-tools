@@ -93,6 +93,7 @@ Please use caution. This script is still under development. Some v3 scripts have
 
 ### Coming soon
 
+- [ ] Backup restorelist type is hard coded at --type=wp. Coming soon --type=html and --type=php logic.
 - [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
 - [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
 - [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.

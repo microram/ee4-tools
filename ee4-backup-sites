@@ -28,7 +28,7 @@ main() {
 		if [ $site_lessl == Enabled ]; then opt_lessl='--ssl=le'; else opt_lessl=''; fi
 		if [ $site_wcssl == Yes ];     then opt_wcssl='--wildcard'; else opt_wcssl=''; fi
 		if [ $site_cache == Enabled ]; then opt_cache='--cache'; else opt_cache=''; fi
-		echo ee4-restore-site --domain=$domain --wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
+		echo ee4-restore-site --domain=$domain --type=wp $opt_cache $opt_lessl $opt_wcssl --admin-email=$site_email --s3_server_name=$server_name >> $tmp/$rlfilename
 
 		## Backup Database
 		dbfilename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sql
@@ -70,7 +70,7 @@ main() {
 			nice -n 19 gpg --encrypt --recipient $gpg_pub_email $tmp/$lefilename
 			aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$server_name/$le_backup_folder/$domain/
 			aws s3 ls s3://$bucket/$server_name/$le_backup_folder/$domain/$lefilename.gpg
-			rm $tmp/$lefilename
+			rm $tmp/$lefilename.gpg
 		fi
 
 		## Move site access logs to S3
