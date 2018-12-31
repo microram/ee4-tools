@@ -96,11 +96,11 @@ Please use caution. This script is still under development. Some v3 scripts have
 - [x] --s3_server_name=server1 handling. This will allow cross server backup & restore. For example backup example1.com on server1, then restore example1.com on server2. Since EE v4 only supports 25 sites max, this should let us move sites around to load balance small VPSs better.  
 - [ ] Certificates are not yet being restored. This should not be an issue yet unless you are restoring large numbers of sites and hitting the LetsEncrypt API limit.
 - [x] Server startup script needs work at the bottom. Maybe pulling the remaining scripts from github now that they no longer have any hard coded paths.
-- [x] easier setup from scratch.
-- [x] Maybe cloud-init for even more automation https://help.ubuntu.com/community/CloudInit
+- [x] Easy setup from scratch
+- [x] cloud-init style launch script for your secrets
 - [x] GPG public key in cloud-init
 - [ ] All scripts needs standardization cleanup
-- [ ] Possible reorganization of v3 to v4 scripts
+- [ ] Possible reorganization of v3 scripts
 - [ ] Restore a site n days prior
 - [ ] Restore a glacier backup (low priority. Keep more hot backups see S3 lifecycle rules)
  
