@@ -105,6 +105,9 @@ Please use caution. This script is still under development. Some v3 scripts have
 - [ ] Restore a site n days prior
 - [ ] Restore a glacier backup (low priority. Keep more hot backups see S3 lifecycle rules)
 - [x] Fix --ssl=self minor issue `tar: conf.d/example.com-*.conf: Warning: Cannot stat: No such file or directory`
+- [ ] ee site info does not distinguish between SSL LE or SELF
+- [ ] ee site info appears to report wildcard enabled on SSL SELF
+- [ ] graceful exit if incorrect GPG password is typed
 
 ## License
 
