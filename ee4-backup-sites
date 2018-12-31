@@ -11,7 +11,7 @@ main() {
 		echo "ERROR - Settings file not found or not readable."; exit 1
 	fi
 
-	db_container=`docker ps | grep services_global-db | awk  '{print $11}'`
+	db_container=`docker ps | grep services_global-db | awk  '{print $1}'`
 	proxy_container=`docker ps | grep nginx-proxy | awk '{print $1}'`
 	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sh
 
