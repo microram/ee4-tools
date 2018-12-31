@@ -103,7 +103,8 @@ Please use caution. This script is still under development. Some v3 scripts have
 - [ ] Possible reorganization of v3 scripts
 - [ ] Restore a site n days prior
 - [ ] Restore a glacier backup (low priority. Keep more hot backups see S3 lifecycle rules)
- 
+- [x] Fix --ssl=self minor issue `tar: conf.d/example.com-*.conf: Warning: Cannot stat: No such file or directory`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
