@@ -11,7 +11,7 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 ### EasyEngine v4 Tools
 
 - Server setup script. Restore an entire server from scratch.
-- VPS cloud-init (All secrets needed for setup can be pasted into lauch script box *except GPG)
+- VPS cloud-init (All secrets needed for setup can be pasted into launch script box *except GPG)
 - Backup htdocs, database & LetsEncrypt certs (compress, encrypt, and upload to Amazon S3)
 - Create server rebuild script for disaster recovery (restorelist.sh)
 - Restore a site from v3 backup to v4 server

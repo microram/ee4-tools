@@ -62,7 +62,7 @@ main() {
 		## Cleanup
 		rm $tmp/$filename*
 
-		## Backup LetsEncrypt certs
+		## Backup LetsEncrypt certs /var/lib/docker/volumes/global-nginx-proxy_{certs,confd}
 		if [ $site_lessl == Enabled ]; then
 			lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
 			docker exec $proxy_container bash -c "cd /etc/nginx && tar --ignore-failed-read --atime-preserve -czf /tmp/$lefilename conf.d/$domain-*.conf certs/$domain.* 2>/dev/null"
