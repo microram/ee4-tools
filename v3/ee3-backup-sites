@@ -1,0 +1,65 @@
+#!/bin/bash -x
+
+## Backup all web sites and upload them to Amazon S3
+
+main() {
+
+    ## Load Configuration
+    if [[ -r ~/.ee3-backup-settings.conf ]]; then
+        . ~/.ee3-backup-settings.conf
+    else
+        echo "ERROR - Settings file not found or not readable."; exit 1
+    fi
+
+	echo
+
+	## Prepare automated restore list
+	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.sh
+	restorecmd=./ee3-restore-site
+
+	for domain in $($wo site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort)
+	do
+		echo "Working on: $domain"
+
+		cfg=$($wo site info $domain | grep configuration)
+		if [[ $cfg =~ "wp wpfc" ]]; then
+			echo $restorecmd $domain --wpfc >> $tmp/$rlfilename
+		elif [[ $cfg =~ "wp basic" ]]; then
+			echo $restorecmd $domain --wp >> $tmp/$rlfilename
+		elif [[ $cfg =~ "mysql basic" ]]; then
+			echo $restorecmd $domain --mysql >> $tmp/$rlfilename
+		else
+			echo $restorecmd $domain >> $tmp/$rlfilename
+		fi
+
+		# Backup the site from inside the domain folder. Includes conf & htdocs.
+		filename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+		nice -n 19 tar --atime-preserve -czf $tmp/$filename --directory=/var/www/$domain .
+		nice -n 19 gpg2 --encrypt --recipient $gpg_pub_email $tmp/$filename
+		aws s3 cp $s3options $tmp/$filename.gpg s3://$bucket/$server_name/$sites_base_folder/$domain/
+		aws s3 ls s3://$bucket/$server_name/$sites_base_folder/$domain/$filename.gpg
+		#rm $tmp/$filename*
+
+		## Backup the LetsEncrypt certificates
+		if ls /etc/letsencrypt/renewal/$domain.conf > /dev/null 2>&1; then
+			lefilename=$domain-letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
+			tar --ignore-failed-read --atime-preserve -czf $tmp/$lefilename -C /etc/letsencrypt renewal/$domain.conf archive/$domain live/$domain 2>/dev/null
+			nice -n 19 gpg2 --encrypt --recipient $gpg_pub_email $tmp/$lefilename
+			aws s3 cp $s3options $tmp/$lefilename.gpg s3://$bucket/$server_name/$le_backup_folder/$domain/
+			aws s3 ls s3://$bucket/$server_name/$le_backup_folder/$domain/$lefilename.gpg
+			#rm $tmp/$lefilename*
+		fi
+
+	## Move any compressed site logs
+	if ls /var/log/nginx/$domain.access.log-*.gz > /dev/null 2>&1; then
+		aws s3 mv $s3options /var/log/nginx/$domain.access.log-*.gz s3://$bucket/$server_name/$log_folder/$domain/
+	fi
+	done
+exit 
+
+	aws s3 cp $rlfilename s3://$bucket/$server_name/$restorelist_backup_folder/
+	#rm $rlfilename
+
+}
+
+main "$@"
