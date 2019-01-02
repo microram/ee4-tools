@@ -21,6 +21,7 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 
 ### EasyEngine v3 Tools
 
+- WordOps compatible re-write is now underway. (New ee3-backup-site & .ee3-backup-settings.conf almost ready)
 - Backup all EasyEngine sites to S3
 - Backup all MySQL databases to S3 (EasyEngine not required)
 - Restore a single WordPress site from S3
