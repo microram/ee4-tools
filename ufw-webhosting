@@ -1,0 +1,71 @@
+#!/bin/bash
+## Usage: ufw-webhosting
+## UFW firewall setup script
+## Supports HTTP/HTTPS on CloudFlare, UptimeRobot
+##          LIMITED SSH on Amazon LightSail Web Console, by ASN number, current SSH user, ASN by current SSH user 
+## Requires: jq for Amazon .json (apt-get update && apt-get install jq -qy)
+## ASN Numbers: Comcast-AS7922 AT&T-AS7018 more at https://ipinfo.io/countries/us
+## Note: call ufw-ssh-by-asn as many times as needed
+## Todo: Pull ASN numbers from cloud-init to keep script automated
+
+function main {
+    ufw-reset
+
+    ufw-ssh-current-user
+    ufw-ssh-asn-by-current-user
+    ufw-ssh-amazon-lightsail-webconsole
+    ufw-ssh-by-asn AS7922
+    ufw-ssh-by-asn AS7018
+
+    ufw-http-https-cloudflare
+    ufw-http-https-uptimerobot
+
+    ufw-enable
+}
+
+
+function ufw-reset {
+    ## Remove old backups
+    rm /etc/ufw/{after,after6,before,before6,user,user6}.rules.*
+    ## UFW reset rules
+    ufw --force reset
+}
+
+function ufw-enable {
+    ## ENABLE UFW Firewall
+    ufw --force enable
+}
+
+function ufw-ssh-amazon-lightsail-webconsole {
+    ## UFW SSH AWS EC2/LightSail (Service AMAZON not EC2) (Req jq) apt-get update && apt-get install jq -qy
+    command -v jq >/dev/null 2>&1 || { echo >&2 "I require jq but it's not installed. run 'apt-get install jq' Aborting."; exit 1; }
+    for ip in $(curl -s https://ip-ranges.amazonaws.com/ip-ranges.json | jq --arg awsregion `curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/'` '.prefixes[] | select(.region==$awsregion and .service=="AMAZON") | .ip_prefix' | tr -d '\"'); do ufw limit from ${ip} to any port ssh proto tcp; done
+}
+
+function ufw-ssh-asn-by-current-user {
+    ## UFW Whitelist ASN by current user
+    ip=`who am i|awk '{print $5}'|tr -d '()'`
+    asn=AS`curl -s https://api.hackertarget.com/aslookup/?q=$ip | cut -d, -f2 | tr -d '\"'`
+    ufw-ssh-by-asn $asn
+}
+
+function ufw-ssh-by-asn {
+    ## UFW Whitelist by ASN
+    for ip in $(curl -s https://api.hackertarget.com/aslookup/?q=$1 | tail +2); do ufw limit from ${ip} to any port ssh proto tcp; done
+}
+
+function ufw-ssh-current-user {
+    ## UFW Whitelist current logged in user ip address
+    ufw limit from $(who am i|awk '{print $5}'|tr -d '()') to any port ssh proto tcp
+}
+
+function ufw-http-https-cloudflare {
+    ## UFW Whitelist Cloudflare IPs https://www.cloudflare.com/ips/
+    for ip in $(curl -s https://www.cloudflare.com/ips-v{4,6}); do ufw allow from ${ip} to any port 80,443 proto tcp; done
+}
+
+function ufw-http-https-uptimerobot {
+    ## UFW Whitelist UptimeRobot IPs (Fix CRLF/LF) https://uptimerobot.com/locations
+    for ip in $(curl -s https://uptimerobot.com/inc/files/ips/IPv4andIPv6.txt | tr -d '\r'); do ufw allow from ${ip} to any port 80,443 proto tcp; done
+}
+main "$@"
