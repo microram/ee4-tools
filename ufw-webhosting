@@ -11,11 +11,12 @@
 function main {
     ufw-reset
 
-    ufw-ssh-current-user
-    ufw-ssh-asn-by-current-user
     ufw-ssh-amazon-lightsail-webconsole
-    ufw-ssh-by-asn AS7922
-    ufw-ssh-by-asn AS7018
+    #ufw-ssh-current-user
+    #ufw-ssh-asn-by-current-user
+    #ufw-ssh-by-asn AS7922
+    #ufw-ssh-by-asn AS7018
+    ufw-ssh-by-asn-file #/root/asn-list.txt
 
     ufw-http-https-cloudflare
     ufw-http-https-uptimerobot
@@ -47,6 +48,13 @@ function ufw-ssh-asn-by-current-user {
     ip=`who am i|awk '{print $5}'|tr -d '()'`
     asn=AS`curl -s https://api.hackertarget.com/aslookup/?q=$ip | cut -d, -f2 | tr -d '\"'`
     ufw-ssh-by-asn $asn
+}
+
+function ufw-ssh-by-asn-file {
+    ## UFW Whitelist by ASN from a file
+    while read asn; do
+        for ip in $(curl -s https://api.hackertarget.com/aslookup/?q=$asn | tail +2); do ufw limit from ${ip} to any port ssh proto tcp; done
+    done < /root/asn-list.txt
 }
 
 function ufw-ssh-by-asn {
