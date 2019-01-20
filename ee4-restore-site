@@ -35,7 +35,7 @@ function main {
 			--domain=*) domain="${1#*=}"; shift 1;;
 			--type=*) eetype="--type=${1#*=}"; shift 1;;
 			--ssl=*) eessl="--ssl=${1#*=}"; shift 1;;
-			--le-mail=*) eelemail="--le-email=${1#*=}"; shift 1;;
+			--le-email=*) eelemail="--le-email=${1#*=}"; shift 1;;
 			--admin-email=*) eeadminemail="--admin-email=${1#*=}"; shift 1;;
 			--s3_server_name=*) server_name="${1#*=}"; shift 1;; ## Override server_name from settings file
 			--type|--ssl|--le-mail|--admin-email|--s3_server_name) echo "$1 requires an argument" >&2; exit 1;;
@@ -47,7 +47,7 @@ function main {
 	echo "DEBUG - :domain: $domain  :type: $eetype  :ssl: $eessl  :le-mail: $eelemail  :admin-email: $eeadminemail  :s3_server_name: $server_name  :cache: $eecache  :wildcard: $eewildcard"
 	
 	## Global LetsEncrypt email address from settings file
-	ee config set le-mail $le_email
+	ee config set le-mail $eelemail
 
 	## Determine container ids for shell commands
 	db_container=`docker ps | grep services_global-db | awk  '{print $1}'`
@@ -57,6 +57,8 @@ function main {
 	if [ -d "/opt/easyengine/sites/$domain" ]; then
 		echo delete $domain
 		ee site delete $domain --yes
+		rm -rf /opt/easyengine/sites/$domain
+		# Possible reboot database docker. Sometimes the db is still listed. Reboot the VM fixes this issue. Still investigating
 	fi
 
 	## Create the site
