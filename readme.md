@@ -75,7 +75,7 @@ Please use caution. This script is still under development. Some v3 scripts have
 2. Clone this repository `git clone https://github.com/microram/ee4-tools.git`
 3. Edit the .backup_sites_mysql_s3.conf file first. 
 4. Then edit and review each script before using. Some scripts still have hard coded folders at this time.
-5. Edit and test the ee4-backup-sites script. Then place in your /etc/cron.daily/ folder.
+5. Edit and test the ee3-backup-sites (new) or backup_sites_s3 & backup_mysql_s3 script(s). Then place in your /etc/cron.daily/ folder.
 
 ### Restore Usage Examples
 
