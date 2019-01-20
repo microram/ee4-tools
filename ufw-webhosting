@@ -30,6 +30,8 @@ function ufw-reset {
     rm /etc/ufw/{after,after6,before,before6,user,user6}.rules.*
     ## UFW reset rules
     ufw --force reset
+    ufw default deny incoming
+    ufw default allow outgoing
 }
 
 function ufw-enable {
