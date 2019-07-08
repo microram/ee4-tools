@@ -1,0 +1,49 @@
+#!/bin/bash
+
+## Backup all web sites and upload them to Amazon S3
+
+main() {
+
+    ## Load Configuration
+    if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
+        . ~/.backup_sites_mysql_s3.conf
+    else
+        echo "ERROR - Settings file not found or not readable."; exit 1
+    fi
+
+	## Prepare automated restore list
+	#echo "Preparing automated restore list"
+	#rlfilename=/tmp/restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txt
+        #/root/restorelist > $rlfilename
+        #aws s3 cp $rlfilename s3://$bucket/$config_base_folder/restorelist/
+	#rm $rlfilename
+
+	## Backup LetsEncrypt certs
+	#lefilename=$tmp/letsencrypt-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.txz
+	#echo "Backing up LetsEncrypt - $lefilename"
+	#nice -n 19 tar --atime-preserve -cJf $lefilename --directory=/etc/letsencrypt .
+	#aws s3 cp $s3options $lefilename s3://$bucket/$le_base_folder/
+	#rm $lefilename
+
+	## Backup all web sites in /var/www
+	##  ls loop /var/www or Read from /etc/apache2/sites-enabled?
+	#for domain in `ee site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	for conffile in /etc/apache2/sites-enabled/*.conf
+	do
+		if [[ ! $conffile = *ssl* ]]; then
+		domain=`cat $conffile | grep ServerName | awk '{print $2}'`
+		filename=$tmp/$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz # Create a temp filename
+		echo "Backing up site: $domain - $filename"
+		nice -n 19 tar --atime-preserve -czf $filename --directory=/var/www/$domain .  # Tar the site from inside the domain folder. Includes conf & htdocs
+		aws s3 cp $s3options $filename s3://$bucket/$sites_base_folder/$domain/
+		rm $filename # Remove the temp file
+
+                ## Move any site logs
+                #if ls /var/log/nginx/$domain.access.log-*.gz > /dev/null 2>&1; then
+                #        aws s3 mv $s3options /var/log/nginx/$domain.access.log-*.gz s3://$bucket/$log_base_folder/$domain/
+                #fi
+		fi
+	done
+}
+
+main "$@"
