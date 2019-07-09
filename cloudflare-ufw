@@ -25,6 +25,8 @@ ufw limit ssh comment 'Limit 6 connections in 30 seconds ANY IP'
 
 ## LIMIT SSH by ISP ASN https://www.ultratools.com/tools/asnInfo
 declare -A asdb
+## Fetch currently connected SSH user's ASN
+## whois -h whois.radb.net -- "-i origin `who --ips|awk '{print $5}'`"|grep origin:|awk '{print $2}'|uniq
 ## Add to the array AS numbers and names as needed
 asdb=( [AS21928]='T-Mobile US' [AS7922]='Comcast Xfinity' [AS701]='Verizon North America' )
 #for asnum in ${!asdb[*]}; do for ip in $(whois -h whois.radb.net -- "-i origin ${asnum}" | grep -E 'route6?:' | awk '{print $2}' | sort | uniq); do echo ${ip} ${asdb[$asnum]}; ufw limit from ${ip} to any port 22 proto tcp comment "${asnum} ${asdb[$asnum]}"; done; done
