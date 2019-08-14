@@ -18,11 +18,11 @@ function main {
 	### Globals
 	## Convert non-standard WordPress table_prefix back to wp_
 	fixprefix=true
-	## Cache site files from S3. Saves S3 cost during testing. Normally false.
-	cachefiles=false
+	## Cache site files from S3. Saves S3 cost during testing. DEFAULT false
+	cachefiles=true
 	## Temp folder
 	tmp=/tmp
-	## WordOps site type and switch --wptc to --wpredis
+	## WordOps site type and switch --w3tc & --wpfc to --wpredis
 	sitetype=${2/--w3tc/--wpredis}
 	sitetype=${sitetype/--wpfc/--wpredis}
 	## Site domain name
@@ -47,16 +47,15 @@ function main {
 
 	## Create the site
 	echo Create site $domain
-	wo site create $domain $sitetype   #--letsencrypt --experimental (requires A/CNAME already setup)
+	wo site create $domain $sitetype
 
 
 	## Restore the site files
 	restore_wp_domain_s3
 
 	## Restore the database if --wp --wpredis --wpfc --mysql 
-	if [ -n "$2" ]; then
-
-	## Fix non wp_ prefix databases
+	if [ "$2" == "--wp" ] || [ "$2" == "--wpredis" ] || [ "$2" == "--pfc" ] || [ "$2" == "--mysql" ]; then
+		## Fix non wp_ prefix databases
 		wprefix=`cat /var/www/$domain/wp-config.php.old | grep table_prefix | cut -d \' -f 2`
 		echo "WordPress table_prefix $wprefix"
 		restore_db_s3
@@ -71,6 +70,7 @@ function main {
 	fi
 	wo site update $domain -le --dns=dns_cf
 
+	echo Site $domain restored.
 } #main
 
 function restore_wp_domain_s3 {
@@ -108,7 +108,7 @@ function restore_wp_domain_s3 {
 	#	#mv $tmp/ee-config.php /var/www/$domain/
 	#fi
 	chown -Rf www-data:www-data /var/www/$domain
-	if [ ! cachefiles ]; then
+	if [ ! "$cachefiles" = true ]; then
 		rm $tmp/$domain*
 	fi
 }
@@ -146,7 +146,7 @@ function restore_db_s3 {
 	## mysql restore
 	echo Restore $domain database
 	mysql -h 127.0.0.1 -u $my_user -p$my_password $dbname < $tmp/$dbfile2
-	if [ ! cachefiles ]; then
+	if [ ! "$cachefiles" = true ]; then
 		rm $tmp/$dbfile2
 	fi
 }
