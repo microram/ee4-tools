@@ -9,16 +9,16 @@
 
 function main {
 	### Load configuration
-    if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
-        . ~/.backup_sites_mysql_s3.conf
-    else
-        echo "ERROR - Settings file not found or not readable."; exit 1
-    fi
+	if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
+		. ~/.backup_sites_mysql_s3.conf
+	else
+		echo "ERROR - Settings file not found or not readable."; exit 1
+	fi
 
-    ### Globals
+	### Globals
 	## Convert non-standard WordPress table_prefix back to wp_
 	fixprefix=true
-    ## Cache site files from S3. Saves S3 cost during testing. Normally false.
+	## Cache site files from S3. Saves S3 cost during testing. Normally false.
 	cachefiles=false
 	## Temp folder
 	tmp=/tmp
@@ -97,14 +97,14 @@ function restore_wp_domain_s3 {
 	## Change split() to preg_split() https://www.php.net/manual/en/function.split.php
 	find /var/www/$domain/ -type f -exec sed -i 's/ split(/ preg_split(/g' {} +
 
- 	### Archive old site config
+	### Archive old site config
 	if [ -f /var/www/$domain/wp-config.php ]; then
-   		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
+		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
 		#mv $tmp/wp-config.php /var/www/$domain/
 		#ls -lh $tmp/wp-config.php
 	fi
 	#if [ -f /var/www/ee-config.php ]; then
-   	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.old
+	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.old
 	#	#mv $tmp/ee-config.php /var/www/$domain/
 	#fi
 	chown -Rf www-data:www-data /var/www/$domain
