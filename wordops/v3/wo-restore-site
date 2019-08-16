@@ -5,7 +5,7 @@
 # Params:
 #		$1 = domain name (example.com)
 #		$2 = site type (null/--html|--mysql|--wp|--wpredis|--wpsc|--php*)
-#		$3 = backup number to restore (null/0=newest, 1=1st back from most recent, 2=2nd back from most recent, etc) - COMING SOON
+#		$3 = backup number to restore (null/0=newest, 1=1st back from most recent, 2=2nd back from most recent, etc)
 #
 ### Globals
 ## Convert non-standard WordPress table_prefix back to wp_
