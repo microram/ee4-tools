@@ -13,6 +13,9 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 ### WordOps v3 Tools
 
 - Restore to WordOps from EasyEngine v3 
+- Backup WordOps sites
+- TODO Database backup - use ee v3 backup_mysql_s3 for now
+- Restore from any backup revision as 3rd parameter. Good for rolling back a site with one command.
 
 ### EasyEngine v4 Tools
 
