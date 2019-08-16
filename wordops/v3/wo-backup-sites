@@ -9,14 +9,14 @@ main() {
 		. ~/.backup_sites_mysql_s3.conf
 		s3_mysql=s3://$bucket/$server_name/$backup_folder/mysql
 		s3_site=s3://$bucket/$server_name/$backup_folder/site
-		s3_config=s3://$bucket/$server_name/$backup_folder/config/
+		s3_config=s3://$bucket/$server_name/$backup_folder/config
 		s3_log=s3://$bucket/$server_name/log
 	else
 		echo "ERROR - Settings file not found or not readable."; exit 1
 	fi
 
 	## Prepare automated restore list
-	rlfilename=$tmp/restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`
+	rlfilename=restorelist-`/bin/date -u +"%Y%m%dT%H%M%SZ"`
 	restorecmd=./wo-restore-site
 
 	for domain in $(wo site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort)
@@ -26,22 +26,22 @@ main() {
 		### Determine site type
 		cfg=$(wo site info $domain | grep configuration)
 		if [[ $cfg =~ "wp wpredis" ]]; then
-			echo $restorecmd $domain --wpredis >> $rlfilename
+			echo $restorecmd $domain --wpredis >> $tmp/$rlfilename
 		elif [[ $cfg =~ "wp basic" ]]; then
-			echo $restorecmd $domain --wp >> $rlfilename
+			echo $restorecmd $domain --wp >> $tmp/$rlfilename
 		elif [[ $cfg =~ "wp wpfc" ]]; then
-			echo $restorecmd $domain --wpfc >> $rlfilename
+			echo $restorecmd $domain --wpfc >> $tmp/$rlfilename
 		elif [[ $cfg =~ "mysql basic" ]]; then
-			echo $restorecmd $domain --mysql >> $rlfilename
+			echo $restorecmd $domain --mysql >> $tmp/$rlfilename
 		elif [[ $cfg =~ "php73 basic" ]]; then
-			echo $restorecmd $domain --php73 >> $rlfilename
+			echo $restorecmd $domain --php73 >> $tmp/$rlfilename
 		elif [[ $cfg =~ "php basic" ]]; then
 			## Same as --php72 for as of WordOps v3.9.7
-			echo $restorecmd $domain --php >> $rlfilename
+			echo $restorecmd $domain --php >> $tmp/$rlfilename
 		elif [[ $cfg =~ "html basic" ]]; then
-			echo $restorecmd $domain >> $rlfilename
+			echo $restorecmd $domain >> $tmp/$rlfilename
 		else
-			echo $restorecmd $domain >> $rlfilename
+			echo $restorecmd $domain >> $tmp/$rlfilename
 		fi
 
 		### Backup the site files
@@ -52,8 +52,16 @@ main() {
 		rm $tmp/$filename
 
 		### Backup the site Database
-		## TODO - USE backup_mysql_s3 for now
-		echo ERROR - MySQL BACKUP MISSING - Hint:Use backup_mysql_s3 in addition to wo-backup-sites
+		dbtest=${domain/./_}
+		checkfortbl=${dbtest/./_}
+		for tbl in `mysql -h $dbserver -u $dbuser -p$dbpassword -Bse "show databases LIKE '$checkfortbl';" `
+		do
+			filename=$tbl-`/bin/date  -u +"%Y%m%dT%H%M%SZ"`.sql.$comp_ext
+			mysql_backup "$tbl" "$filename"
+			aws s3 cp $s3options $tmp/$filename $s3_mysql/$tbl/
+			aws s3 ls $s3_mysql/$tbl/$filename
+			rm $tmp/$filename
+		done
 
 		### Archive the access log files
 		if ls /var/log/nginx/$domain.access.log-*.gz > /dev/null 2>&1; then
@@ -62,9 +70,26 @@ main() {
 	done
 
 	### Backup the site restore list
-	aws s3 cp $s3options $rlfilename $s3_config
-	rm $rlfilename
+	aws s3 cp $s3options $tmp/$rlfilename $s3_config/
+	echo Saving restore list.
+	aws s3 ls $s3_config/$rlfilename
+	rm $tmp/$rlfilename
+	echo Done
+}
 
+function mysql_backup {
+    # Backup the database
+    nice -n 19 mysqldump \
+        --no-create-db \
+    	--opt \
+    	--add-drop-table \
+    	-Q \
+    	-h $dbserver \
+    	-u $dbuser \
+    	-p$dbpassword \
+    	$1 | \
+    	$comp_pgm > \
+    	$tmp/$2
 }
 
 main "$@"
