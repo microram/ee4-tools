@@ -16,6 +16,18 @@ cachefiles=true
 switchfc2redis=true
 
 function main {
+	### Preflight checks
+	if [[ ! -r /etc/mysql/conf.d/my.cnf ]]; then
+		wo site create test.tld --wpredis && wo site delete test.tld --no-prompt
+	fi
+	if [[ ! -r ~/.aws/config ]]; then
+		echo "ERROR: ~/.aws/config file not found or not readable."; exit 1
+	fi
+	if ! [[ -x "$(command -v aws)" ]]; then
+		echo WARNING - AWSCLI missing. Attempting to apt install awscli
+		apt update && apt install awscli -qy
+	fi
+
 	### Load configuration
 	if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
 		. ~/.backup_sites_mysql_s3.conf
@@ -29,7 +41,7 @@ function main {
 		s3_config=s3://$bucket/$server_name/$backup_folder/config/
 		s3_log=s3://$bucket/$server_name/log
 	else
-		echo "ERROR - Settings file not found or not readable."; exit 1
+		echo "ERROR: ~/.backup_sites_mysql_s3.conf file not found or not readable."; exit 1
 	fi
 
 	## Change cache type from deprecated FastCache --wpfc & W3TotalCache --w3tc to Redis
@@ -83,7 +95,7 @@ function main {
 	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
 		cp /etc/letsencrypt/live/$domain/key.pem /etc/letsencrypt/live/$domain/privkey.pem
 	fi
-	#wo site update $domain -le --dns=dns_cf
+	wo site update $domain -le --dns=dns_cf
 
 	echo Site $domain restored.
 } #main
