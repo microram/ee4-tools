@@ -12,6 +12,8 @@
 fixprefix=true
 ## Cache site files from S3 when true. Saves S3 cost during testing. DEFAULT false
 cachefiles=true
+## Switch --wpfc to --wpredis
+switchfc2redis=true
 
 function main {
 	### Load configuration
@@ -32,9 +34,14 @@ function main {
 
 	## Change cache type from deprecated FastCache --wpfc & W3TotalCache --w3tc to Redis
 	sitetype=${2/--w3tc/--wpredis}
-	sitetype=${sitetype/--wpfc/--wpredis}
+	sitetype=${sitetype/--wpsc/--wpredis}
+	if [ "$switchfc2redis" = true ]; then
+		sitetype=${sitetype/--wpfc/--wpredis}
+	fi
 	## Site domain name
 	domain=$1
+	options=$2
+	restorelevel=$3
 	## Database name converted from . to _ notation
 	dbtest=${domain/./_}
 	dbname=${dbtest/./_}
@@ -65,9 +72,7 @@ function main {
 	restore_wp_domain_s3
 
 	## Restore the database if --wp --wpredis --wpfc --mysql 
-	if [ "$2" == "--wp" ] || [ "$2" == "--wpredis" ] || [ "$2" == "--pfc" ] || [ "$2" == "--mysql" ]; then
-		## Fix non wp_ prefix databases
-		wprefix=`cat /var/www/$domain/wp-config.php.old | grep table_prefix | cut -d \' -f 2`
+	if [ "$2" == "--wp" ] || [ "$2" == "--wpredis" ] || [ "$2" == "--wpfc" ] || [ "$2" == "--mysql" ]; then
 		restore_db_s3
 	fi
 
@@ -78,7 +83,7 @@ function main {
 	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
 		cp /etc/letsencrypt/live/$domain/key.pem /etc/letsencrypt/live/$domain/privkey.pem
 	fi
-	wo site update $domain -le --dns=dns_cf
+	#wo site update $domain -le --dns=dns_cf
 
 	echo Site $domain restored.
 } #main
@@ -141,15 +146,19 @@ function restore_db_s3 {
 	fi
 
 	## Patch the non-standard table_prefix
-	if [ "$wprefix" != "wp_" ]; then
-		if [ fixprefix ]; then
-			## Find/Replace the non-standard table_prefix to wp_
-			echo "Converting WordPress database tables from table_prefix $wprefix to wp_"
-			sed -i "s/$wprefix/wp_/g" $tmp/$dbfile2
-		else
-			## Keep the non-standard table_prefix
-			echo "Setting WordPress table_prefix to non-standard $wprefix"
-			sed -i "s/wp_/$wprefix/g" /var/www/$domain/wp-config.php.wordops
+	if [ "$wprefix" != "wp_" ] && [ "$options" != "--mysql" ]; then
+		## Fix non wp_ prefix databases
+		if [ -f /var/www/$domain/wp-config.php.old ]; then
+			wprefix=`cat /var/www/$domain/wp-config.php.old | grep table_prefix | cut -d \' -f 2`
+			if [ fixprefix ]; then
+				## Find/Replace the non-standard table_prefix to wp_
+				echo "Converting WordPress database tables from table_prefix $wprefix to wp_"
+				sed -i "s/$wprefix/wp_/g" $tmp/$dbfile2
+			else
+				## Keep the non-standard table_prefix
+				echo "Setting WordPress table_prefix to non-standard $wprefix"
+				sed -i "s/wp_/$wprefix/g" /var/www/$domain/wp-config.php.wordops
+			fi
 		fi
 	fi
 
