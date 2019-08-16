@@ -1,28 +1,36 @@
 #!/bin/bash
 #
-#  WordOps RESTORE from S3
+# WordOps RESTORE from S3
 #
 # Params:
-#        $1 = domain name (example.com)
-#        $2 = site type (null|--mysql|--wp|--redis)
+#		$1 = domain name (example.com)
+#		$2 = site type (null/--html|--mysql|--wp|--wpredis|--wpsc|--php*)
+#		$3 = backup number to restore (null/0=newest, 1=1st back from most recent, 2=2nd back from most recent, etc) - COMING SOON
 #
+### Globals
+## Convert non-standard WordPress table_prefix back to wp_
+fixprefix=true
+## Cache site files from S3 when true. Saves S3 cost during testing. DEFAULT false
+cachefiles=true
 
 function main {
 	### Load configuration
 	if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
 		. ~/.backup_sites_mysql_s3.conf
+		## -- ## Uncomment as needed to override restore location if restoring from a different server
+		#bucket=
+		server_name=hosting2
+		#backup_folder=backup
+		## -- ## No changes below
+		s3_mysql=s3://$bucket/$server_name/$backup_folder/mysql
+		s3_site=s3://$bucket/$server_name/$backup_folder/site
+		s3_config=s3://$bucket/$server_name/$backup_folder/config/
+		s3_log=s3://$bucket/$server_name/log
 	else
 		echo "ERROR - Settings file not found or not readable."; exit 1
 	fi
 
-	### Globals
-	## Convert non-standard WordPress table_prefix back to wp_
-	fixprefix=true
-	## Cache site files from S3. Saves S3 cost during testing. DEFAULT false
-	cachefiles=true
-	## Temp folder
-	tmp=/tmp
-	## WordOps site type and switch --w3tc & --wpfc to --wpredis
+	## Change cache type from deprecated FastCache --wpfc & W3TotalCache --w3tc to Redis
 	sitetype=${2/--w3tc/--wpredis}
 	sitetype=${sitetype/--wpfc/--wpredis}
 	## Site domain name
@@ -33,9 +41,12 @@ function main {
 	## mysql root username and password
 	my_user=`grep -i "user" /etc/mysql/conf.d/my.cnf | awk -F\= '{gsub(/"/,"",$2);print $2}' | awk '{print $1}'`
 	my_password=`grep -i "password" /etc/mysql/conf.d/my.cnf | awk -F\= '{gsub(/"/,"",$2);print $2}' | awk '{print $1}'`
-	## Override config file if restoring from a different server
-	mysql_base_folder=hosting2/backup/mysql
-	sites_base_folder=hosting2/backup/site
+	## aws s3 ls s3://xxx | tail -$backupnum | head -1
+	if [ $3 ]; then
+		backupsprior=$((1 + $3))
+	else
+		backupsprior=1
+	fi
 
 	## Check if site exists then delete
 	if [ -d "/var/www/$domain" ]; then
@@ -57,12 +68,11 @@ function main {
 	if [ "$2" == "--wp" ] || [ "$2" == "--wpredis" ] || [ "$2" == "--pfc" ] || [ "$2" == "--mysql" ]; then
 		## Fix non wp_ prefix databases
 		wprefix=`cat /var/www/$domain/wp-config.php.old | grep table_prefix | cut -d \' -f 2`
-		echo "WordPress table_prefix $wprefix"
 		restore_db_s3
 	fi
 
-	## Optimize the site DB & Update all plugins
-	site_update_optimize
+	## Fix caching plugins
+	site_caching
 
 	## Enable LetsEncrypt Certificate
 	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
@@ -78,15 +88,17 @@ function restore_wp_domain_s3 {
 	if [ -f /var/www/$domain/wp-config.php ]; then
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.wordops
 	fi
+	## - Untested for sitetype=mysql
 	#if [ -f /var/www/$domain/ee-config.php ]; then
 	#	### WARNING This may have changed from ee- to wo- needs more testing
 	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.wordops
 	#fi
 
 	### Download the wordpress site backup file
-	sitefile=`aws s3 ls s3://$bucket/$sites_base_folder/$domain/ | awk '{print $4}' | tail -1`
+	sitefile=`aws s3 ls $s3_site/$domain/ | awk '{print $4}' | tail -$backupsprior | head -1`
+	echo Restoring $domain site backup $sitefile
 	if [ ! -f $tmp/$sitefile ]; then
-		aws s3 cp s3://$bucket/$sites_base_folder/$domain/$sitefile $tmp
+		aws s3 cp $s3options $s3_site/$domain/$sitefile $tmp
 	fi
 
 	### Decompress the site files
@@ -100,9 +112,8 @@ function restore_wp_domain_s3 {
 	### Archive old site config
 	if [ -f /var/www/$domain/wp-config.php ]; then
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
-		#mv $tmp/wp-config.php /var/www/$domain/
-		#ls -lh $tmp/wp-config.php
 	fi
+	## - Untested for sitetype=mysql
 	#if [ -f /var/www/ee-config.php ]; then
 	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.old
 	#	#mv $tmp/ee-config.php /var/www/$domain/
@@ -116,11 +127,13 @@ function restore_wp_domain_s3 {
 function restore_db_s3 {
 	### Clear the default WordPress database
 	mysqldump -u$my_user -p$my_password --no-data --add-drop-table $dbname | grep ^DROP | mysql -u$my_user -p$my_password $dbname
-	dbfile=`aws s3 ls s3://$bucket/$mysql_base_folder/$dbname/ | awk '{print $4}' | tail -1`
+	dbfile=`aws s3 ls $s3_mysql/$dbname/ | awk '{print $4}' | tail -$backupsprior | head -1`
 	dbfile2=${dbfile/.sql.gz/.sql}
+	echo Restoring $domain mysql backup $dbfile
+
 	## Use cached DB file if available
 	if [ ! -f $tmp/$dbfile2 ]; then
-		aws s3 cp s3://$bucket/$mysql_base_folder/$dbname/$dbfile $tmp
+		aws s3 cp $s3options $s3_mysql/$dbname/$dbfile $tmp
 	fi
 	## Decompress backup file if needed
 	if [ -f $tmp/$dbfile ]; then
@@ -131,9 +144,11 @@ function restore_db_s3 {
 	if [ "$wprefix" != "wp_" ]; then
 		if [ fixprefix ]; then
 			## Find/Replace the non-standard table_prefix to wp_
+			echo "Converting WordPress database tables from table_prefix $wprefix to wp_"
 			sed -i "s/$wprefix/wp_/g" $tmp/$dbfile2
 		else
 			## Keep the non-standard table_prefix
+			echo "Setting WordPress table_prefix to non-standard $wprefix"
 			sed -i "s/wp_/$wprefix/g" /var/www/$domain/wp-config.php.wordops
 		fi
 	fi
@@ -152,24 +167,35 @@ function restore_db_s3 {
 }
 
 function site_update_optimize {
+	### Unused function at this time
+	echo Not Implemented
 	#wp config get --allow-root --path=/var/www/$domain/htdocs/
-	wp db optimize --allow-root --path=/var/www/$domain/htdocs/
-	if [ "$sitetype" == "--wpredis" ]; then
-		## remove old cache plugins
-		wp plugin deactivate wp-super-cache --allow-root --path=/var/www/$domain/htdocs/
-		wp plugin delete wp-super-cache --allow-root --path=/var/www/$domain/htdocs/
-		wp plugin deactivate advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
-		wp plugin delete advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
-		## install redis-cache plugin
-		wp plugin activate nginx-helper --allow-root --path=/var/www/$domain/htdocs/
-		wp plugin activate redis-cache --allow-root --path=/var/www/$domain/htdocs/
-	fi
-	## Update the plugins
-	wp plugin update --all --allow-root --path=/var/www/$domain/htdocs/
+	#wp db optimize --allow-root --path=/var/www/$domain/htdocs/
+	## Update all plugins
+	#wp plugin update --all --allow-root --path=/var/www/$domain/htdocs/
 	## Install our favorite site offline plugin
-	wp plugin install site-is-offline-plugin --allow-root --path=/var/www/$domain/htdocs/
-	## Show the remaining plugins
-	wp plugin list --allow-root --path=/var/www/$domain/htdocs/
+	#wp plugin install site-is-offline-plugin --allow-root --path=/var/www/$domain/htdocs/
+	## Show the list of plugins
+	#wp plugin list --allow-root --path=/var/www/$domain/htdocs/
+}
+
+function site_caching {
+	if [ "$sitetype" == "--wpredis" ]; then
+		## Remove old cache plugins
+		wp plugin deactivate w3-total-cache wp-super-cache advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin delete w3-total-cache wp-super-cache advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
+		## Activate nginx-helper & redis-cache plugins
+		wp plugin install nginx-helper redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin activate nginx-helper redis-cache --allow-root --path=/var/www/$domain/htdocs/
+	fi
+	if [ "$sitetype" == "--wp" ]; then
+		## Remove old cache plugins
+		wp plugin deactivate wp-super-cache advanced-cache.php redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin delete wp-super-cache advanced-cache.php redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		## Activate nginx-helper plugin
+		wp plugin install nginx-helper --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin activate nginx-helper --allow-root --path=/var/www/$domain/htdocs/
+	fi
 }
 
 main "$@"

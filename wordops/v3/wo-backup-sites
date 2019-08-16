@@ -29,8 +29,17 @@ main() {
 			echo $restorecmd $domain --wpredis >> $rlfilename
 		elif [[ $cfg =~ "wp basic" ]]; then
 			echo $restorecmd $domain --wp >> $rlfilename
+		elif [[ $cfg =~ "wp wpfc" ]]; then
+			echo $restorecmd $domain --wpfc >> $rlfilename
 		elif [[ $cfg =~ "mysql basic" ]]; then
 			echo $restorecmd $domain --mysql >> $rlfilename
+		elif [[ $cfg =~ "php73 basic" ]]; then
+			echo $restorecmd $domain --php73 >> $rlfilename
+		elif [[ $cfg =~ "php basic" ]]; then
+			## Same as --php72 for as of WordOps v3.9.7
+			echo $restorecmd $domain --php >> $rlfilename
+		elif [[ $cfg =~ "html basic" ]]; then
+			echo $restorecmd $domain >> $rlfilename
 		else
 			echo $restorecmd $domain >> $rlfilename
 		fi
@@ -43,6 +52,8 @@ main() {
 		rm $tmp/$filename
 
 		### Backup the site Database
+		## TODO - USE backup_mysql_s3 for now
+		echo ERROR - MySQL BACKUP MISSING - Hint:Use backup_mysql_s3 in addition to wo-backup-sites
 
 		### Archive the access log files
 		if ls /var/log/nginx/$domain.access.log-*.gz > /dev/null 2>&1; then
