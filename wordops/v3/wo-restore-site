@@ -101,11 +101,11 @@ function main {
 } #main
 
 function restore_wp_domain_s3 {
-	### Preserve new site config
+	### Preserve new wp config
 	if [ -f /var/www/$domain/wp-config.php ]; then
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.wordops
 	fi
-	## - Untested for sitetype=mysql
+	### Preserve new mysql config
 	if [ -f /var/www/$domain/wo-config.php ]; then
 		mv /var/www/$domain/wo-config.php /var/www/$domain/wo-config.php.wordops
 	fi
@@ -129,9 +129,8 @@ function restore_wp_domain_s3 {
 	if [ -f /var/www/$domain/wp-config.php ]; then
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
 	fi
-	## - Untested for sitetype=mysql
+	### Set new preserved mysql config
 	if [ -f /var/www/$domain/wo-config.php.wordops ]; then
-		#mv /var/www/$domain/wo-config.php /var/www/$domain/wo-config.php.old
 		rm /var/www/$domain/wo-config.php
 		mv /var/www/$domain/wo-config.php.wordops /var/www/$domain/wo-config.php
 	fi
@@ -174,9 +173,10 @@ function restore_db_s3 {
 		fi
 	fi
 
-	## Restore new site config
+	## Set new preserved wp config and remove old config after patching the table_prefix
 	if [ -f /var/www/$domain/wp-config.php.wordops ]; then
 		mv /var/www/$domain/wp-config.php.wordops /var/www/$domain/wp-config.php
+		rm /var/www/$domain/wp-config.php.old
 	fi
 
 	## mysql restore
