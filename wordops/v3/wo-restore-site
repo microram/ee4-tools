@@ -21,7 +21,7 @@ function main {
 		. ~/.backup_sites_mysql_s3.conf
 		## -- ## Uncomment as needed to override restore location if restoring from a different server
 		#bucket=
-		server_name=hosting2
+		server_name=hosting3
 		#backup_folder=backup
 		## -- ## No changes below
 		s3_mysql=s3://$bucket/$server_name/$backup_folder/mysql
@@ -83,7 +83,7 @@ function main {
 	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
 		cp /etc/letsencrypt/live/$domain/key.pem /etc/letsencrypt/live/$domain/privkey.pem
 	fi
-	#wo site update $domain -le --dns=dns_cf
+	wo site update $domain -le --dns=dns_cf
 
 	echo Site $domain restored.
 } #main
@@ -94,10 +94,9 @@ function restore_wp_domain_s3 {
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.wordops
 	fi
 	## - Untested for sitetype=mysql
-	#if [ -f /var/www/$domain/ee-config.php ]; then
-	#	### WARNING This may have changed from ee- to wo- needs more testing
-	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.wordops
-	#fi
+	if [ -f /var/www/$domain/wo-config.php ]; then
+		mv /var/www/$domain/wo-config.php /var/www/$domain/wo-config.php.wordops
+	fi
 
 	### Download the wordpress site backup file
 	sitefile=`aws s3 ls $s3_site/$domain/ | awk '{print $4}' | tail -$backupsprior | head -1`
@@ -119,10 +118,11 @@ function restore_wp_domain_s3 {
 		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
 	fi
 	## - Untested for sitetype=mysql
-	#if [ -f /var/www/ee-config.php ]; then
-	#	mv /var/www/$domain/ee-config.php /var/www/$domain/ee-config.php.old
-	#	#mv $tmp/ee-config.php /var/www/$domain/
-	#fi
+	if [ -f /var/www/$domain/wo-config.php.wordops ]; then
+		#mv /var/www/$domain/wo-config.php /var/www/$domain/wo-config.php.old
+		rm /var/www/$domain/wo-config.php
+		mv /var/www/$domain/wo-config.php.wordops /var/www/$domain/wo-config.php
+	fi
 	chown -Rf www-data:www-data /var/www/$domain
 	if [ ! "$cachefiles" = true ]; then
 		rm $tmp/$domain*
