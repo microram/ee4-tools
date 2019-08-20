@@ -8,7 +8,7 @@ The server setup script (ee4 only) is designed to start with a fresh Ubuntu 18.0
 
 We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTPS access to the server via CloudFlare which greatly reduces the attack surface. The free Cloudflare tier is more than enough for most WordPress sites. Simply move your [DNS](https://support.cloudflare.com/hc/en-us/articles/201720164-Step-2-Create-a-Cloudflare-account-and-add-a-website) hosting to Cloudflare. Set the A/AAAA/CNAME record to [orange](https://support.cloudflare.com/hc/en-us/articles/200169626-What-subdomains-are-appropriate-for-orange-gray-clouds-). Now your sites pass through Cloudflare protection and you get free [caching](https://support.cloudflare.com/hc/en-us/articles/200172516-Which-file-extensions-does-Cloudflare-cache-for-static-content-)!
 
-## EasyEngine v4 development ON-HOLD
+#### EasyEngine v4 development ON-HOLD
 
 EasyEngine v4 has not been met our current needs. Development on EEv4 scripts has been paused while we work on WordOps v3 as it continues to be a better fit for us. Migration of the remaining sites from our EEv3 servers to WordOps v3 will be the primary focus of the scripts in this project. We will watch EEv4 development continue and re-evalute moving to EEv4 in the future.
 
@@ -130,7 +130,7 @@ Please use caution. This script is still always under development. Some EasyEngi
 
     ~/wo-restore-site example.com --wpredis
 
-# NEW WordOps Restore n backups prior to current. Days n must be 3rd parameter.
+#### NEW WordOps Restore n backups prior to current. Days n must be 3rd parameter.
 
     ~/wo-restore-site example.com --wpredis 2
 
