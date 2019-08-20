@@ -10,7 +10,7 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 
 #### EasyEngine v4 development ON-HOLD
 
-EasyEngine v4 has not been met our current needs. Development on EEv4 scripts has been paused while we work on WordOps v3 as it continues to be a better fit for us. Migration of the remaining sites from our EEv3 servers to WordOps v3 will be the primary focus of the scripts in this project. We will watch EEv4 development continue and re-evalute moving to EEv4 in the future.
+EasyEngine v4 has not met our current needs for stability and memory requirements. Development on EEv4 scripts has been paused while we work on WordOps v3. We will watch EasyEngine v4 development continue and re-evalute moving in the future.
 
 ### WordOps v3 Tools
 
