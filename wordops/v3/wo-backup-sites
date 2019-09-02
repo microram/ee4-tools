@@ -7,8 +7,8 @@ main() {
 	## Load Configuration
 	if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
 		. ~/.backup_sites_mysql_s3.conf
-		s3_mysql=s3://$bucket/$server_name/$backup_folder/mysql
-		s3_site=s3://$bucket/$server_name/$backup_folder/site
+		s3_mysql=s3://$bucket/$server_name/$backup_folder/db
+		s3_site=s3://$bucket/$server_name/$backup_folder/files
 		s3_config=s3://$bucket/$server_name/$backup_folder/config
 		s3_log=s3://$bucket/$server_name/log
 	else
@@ -45,23 +45,21 @@ main() {
 		fi
 
 		### Backup the site files
-		filename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`.tgz
-		nice -n 19 tar --atime-preserve -czf $tmp/$filename --directory=/var/www/$domain .
-		aws s3 cp $s3options $tmp/$filename $s3_site/$domain/
-		aws s3 ls $s3_site/$domain/$filename
-		rm $tmp/$filename
+		filename=$domain-`/bin/date -u +"%Y%m%dT%H%M%SZ"`
+		nice -n 19 tar --atime-preserve -czf $tmp/$filename.t$comp_ext --directory=/var/www/$domain .
+		aws s3 cp $s3options $tmp/$filename.t$comp_ext $s3_site/$domain/
+		aws s3 ls $s3_site/$domain/$filename.t$comp_ext
+		rm $tmp/$filename.t$comp_ext
 
-		### Backup the site Database
-		dbtest=${domain/./_}
-		checkfortbl=${dbtest/./_}
-		for tbl in `mysql -h $dbserver -u $dbuser -p$dbpassword -Bse "show databases LIKE '$checkfortbl';" `
-		do
-			filename=$tbl-`/bin/date  -u +"%Y%m%dT%H%M%SZ"`.sql.$comp_ext
+		### Backup the site database
+		tbl=`wo site info $domain | grep DB_NAME | awk '{print $2}'`
+		if [[ "$tbl" != "" ]]; then
+			filename=$domain-`/bin/date  -u +"%Y%m%dT%H%M%SZ"`.sql.$comp_ext
 			mysql_backup "$tbl" "$filename"
-			aws s3 cp $s3options $tmp/$filename $s3_mysql/$tbl/
-			aws s3 ls $s3_mysql/$tbl/$filename
+			aws s3 cp $s3options $tmp/$filename $s3_mysql/$domain/
+			aws s3 ls $s3_mysql/$domain/$filename
 			rm $tmp/$filename
-		done
+		fi
 
 		### Archive the access log files
 		if ls /var/log/nginx/$domain.access.log-*.gz > /dev/null 2>&1; then
@@ -73,6 +71,7 @@ main() {
 	aws s3 cp $s3options $tmp/$rlfilename $s3_config/
 	echo Saving restore list.
 	aws s3 ls $s3_config/$rlfilename
+	cat $tmp/$rlfilename
 	rm $tmp/$rlfilename
 	echo Done
 }
