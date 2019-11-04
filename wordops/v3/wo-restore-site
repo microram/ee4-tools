@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # WordOps RESTORE from S3
 #
@@ -33,7 +33,7 @@ function main {
 		. ~/.backup_sites_mysql_s3.conf
 		## -- ## Uncomment as needed to override restore location if restoring from a different server
 		#bucket=
-		server_name=hosting3
+		server_name=hosting2
 		#backup_folder=backup
 		## -- ## No changes below
 		s3_mysql=s3://$bucket/$server_name/$backup_folder/mysql
@@ -95,7 +95,9 @@ function main {
 	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
 		cp /etc/letsencrypt/live/$domain/key.pem /etc/letsencrypt/live/$domain/privkey.pem
 	fi
-	wo site update $domain -le --dns=dns_cf
+
+	#echo Lets Encrypt DNS setup
+	#wo site update $domain -le --dns=dns_cf
 
 	echo Site $domain restored.
 } #main
@@ -141,8 +143,10 @@ function restore_wp_domain_s3 {
 }
 
 function restore_db_s3 {
+	### Database name pulled from wp-config.php
+        #wodbname=`grep -i "DB_NAME" /var/www/$domain/wp-config.php | awk '{print $3}' | tr -d \'\"`
 	### Clear the default WordPress database
-	mysqldump -u$my_user -p$my_password --no-data --add-drop-table $dbname | grep ^DROP | mysql -u$my_user -p$my_password $dbname
+	#mysqldump -u$my_user -p$my_password --no-data --add-drop-table $wodbname | grep ^DROP | mysql -u$my_user -p$my_password $dbname
 	dbfile=`aws s3 ls $s3_mysql/$dbname/ | awk '{print $4}' | tail -$backupsprior | head -1`
 	dbfile2=${dbfile/.sql.gz/.sql}
 	echo Restoring $domain mysql backup $dbfile
@@ -179,9 +183,15 @@ function restore_db_s3 {
 		rm /var/www/$domain/wp-config.php.old
 	fi
 
+        ### Database name pulled from wo site info formerly wp-config.php
+        #wodbname=`grep -i "DB_NAME" /var/www/$domain/wp-config.php | awk '{print $3}' | tr -d \'\"`
+	wodbname=`wo site info $domain | grep DB_NAME | awk '{print $2}'`
+        ### Clear the default WordPress database
+        mysqldump -u$my_user -p$my_password --no-data --add-drop-table $wodbname | grep ^DROP | mysql -u$my_user -p$my_password $wodbname
+
 	## mysql restore
 	echo Restore $domain database
-	mysql -h 127.0.0.1 -u $my_user -p$my_password $dbname < $tmp/$dbfile2
+	mysql -h 127.0.0.1 -u $my_user -p$my_password $wodbname < $tmp/$dbfile2
 	if [ ! "$cachefiles" = true ]; then
 		rm $tmp/$dbfile2
 	fi
