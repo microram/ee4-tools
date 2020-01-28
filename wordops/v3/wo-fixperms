@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## Reset every site file and folder permissions
+##           group:owner to www-data:www-data
+##       folder permissions to 750 (rwxr-x---)
+##         file permissions to 640 (rw-r-----)
+
+main() {
+
+        for domain in `wo site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+        do
+		## Set Group:Owner to www-data:www-data
+		chown -Rf www-data:www-data /var/www/$domain/htdocs/
+
+                ## Folders
+                find /var/www/$domain/htdocs/ -type d -exec chmod 750 {} \;
+
+                ## Files
+                find /var/www/$domain/htdocs/ -type f -exec chmod 640 {} \;
+        done
+}
+
+main "$@"

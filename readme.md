@@ -12,6 +12,14 @@ We use and recommend Cloudflare. The cloudflare-ufw script only allows HTTP/HTTP
 
 EasyEngine v4 has not met our current needs for stability and memory requirements. Development on EEv4 scripts has been paused while we work on WordOps v3. We will watch EasyEngine v4 development continue and re-evalute moving in the future.
 
+#### Jan 2020 Update
+
+A few new things have been added. A script to restore a WordPress under a new domain name with patching up the links in the database to the new domain name. The ability to clear the CloudFlare cache. A recent incident showed how important it is to clear their cache as bad JS was still making it's way to visitors after cleanup.
+
+Please note the db/files backup folder names changed and may need hard coded in your script for backwards compatibility. Also DB names have changed from simple domain names to partial domain and random digits.
+
+The scripts are in need of a reorganization and probably full separation from the easyengine project. 
+
 ### WordOps v3 Tools
 
 - Restore to WordOps from WordOps or EasyEngine v3
@@ -22,6 +30,10 @@ EasyEngine v4 has not met our current needs for stability and memory requirement
 - Restore handles some PHP7 changes like split().
 - Restore configurable to revert non-standard WordPress table_prefixes back to wp_
 - Restore from any backup revision as 3rd parameter. Good for rolling back several days site with one command.
+- Restore a site as a new domain name. Includes repairing urls in the database to the new site domain.
+- Force update all of the plugins
+- Clear the CloudFlare cache for every site (needs cleanup but works)
+- Reset linux owner and permission script
 
 ### EasyEngine v4 Tools
 

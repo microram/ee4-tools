@@ -1,0 +1,15 @@
+#!/bin/bash
+
+## Clear the CloudFlare cache for every site
+## Note: Does not work on 3rd level domains
+
+main() {
+
+	for domain in `wo site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	do
+		echo $domain
+		php purge-cache.php $domain
+	done
+}
+
+main "$@"

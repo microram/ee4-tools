@@ -1,0 +1,17 @@
+#!/bin/bash
+
+## Update all the plugins for WordPress sites
+
+main() {
+
+	for domain in `wo site list | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | sort`
+	do
+		if [ -f /var/www/$domain/htdocs/wp-includes/version.php ]; then
+			echo $domain
+			wp plugin list --allow-root --path=/var/www/$domain/htdocs/
+			wp plugin update --all --allow-root --path=/var/www/$domain/htdocs/
+		fi
+	done
+}
+
+main "$@"

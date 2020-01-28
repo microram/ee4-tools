@@ -1,0 +1,244 @@
+#!/bin/bash -x
+#
+# WordOps RESTORE from S3
+#
+# Params:
+#		$1 = site domain name (example.com)
+#		$2 = restore from olddomain name (example.com)
+#		$3 = site type (null/--html|--mysql|--wp|--wpredis|--wpsc|--php*)
+#		$4 = backup number to restore (null/0=newest, 1=1st back from most recent, 2=2nd back from most recent, etc)
+#
+### Globals
+## Convert non-standard WordPress table_prefix back to wp_
+fixprefix=true
+## Cache site files from S3 when true. Saves S3 cost during testing. DEFAULT false
+cachefiles=true
+## Switch --wpfc to --wpredis
+switchfc2redis=true
+
+function main {
+	### Preflight checks
+	if [[ ! -r /etc/mysql/conf.d/my.cnf ]]; then
+		wo site create test.tld --wpredis && wo site delete test.tld --no-prompt
+	fi
+	if [[ ! -r ~/.aws/config ]]; then
+		echo "ERROR: ~/.aws/config file not found or not readable."; exit 1
+	fi
+	if ! [[ -x "$(command -v aws)" ]]; then
+		echo WARNING - AWSCLI missing. Attempting to apt install awscli
+		apt update && apt install awscli -qy
+	fi
+
+	### Load configuration
+	if [[ -r ~/.backup_sites_mysql_s3.conf ]] ; then
+		. ~/.backup_sites_mysql_s3.conf
+		## -- ## Uncomment as needed to override restore location if restoring from a different server
+		#bucket=
+		server_name=hosting1
+		#backup_folder=backup
+		## -- ## No changes below
+		s3_mysql=s3://$bucket/$server_name/$backup_folder/db
+		s3_site=s3://$bucket/$server_name/$backup_folder/files
+		s3_config=s3://$bucket/$server_name/$backup_folder/config/
+		s3_log=s3://$bucket/$server_name/log
+	else
+		echo "ERROR: ~/.backup_sites_mysql_s3.conf file not found or not readable."; exit 1
+	fi
+
+	## Change cache type from deprecated FastCache --wpfc & W3TotalCache --w3tc to Redis
+	sitetype=${3/--w3tc/--wpredis}
+	sitetype=${sitetype/--wpsc/--wpredis}
+	if [ "$switchfc2redis" = true ]; then
+		sitetype=${sitetype/--wpfc/--wpredis}
+	fi
+	## Site domain name
+	domain=$1
+	olddomain=$2
+	options=$3
+	restorelevel=$4
+	## Database name converted from . to _ notation
+	#dbtest=${domain/./_}
+	#dbname=${dbtest/./_}
+	dbname=$olddomain
+	## mysql root username and password
+	my_user=`grep -i "user" /etc/mysql/conf.d/my.cnf | awk -F\= '{gsub(/"/,"",$2);print $2}' | awk '{print $1}'`
+	my_password=`grep -i "password" /etc/mysql/conf.d/my.cnf | awk -F\= '{gsub(/"/,"",$2);print $2}' | awk '{print $1}'`
+	## aws s3 ls s3://xxx | tail -$backupnum | head -1
+	if [ $4 ]; then
+		backupsprior=$((1 + $4))
+	else
+		backupsprior=1
+	fi
+
+	## Check if site exists then delete
+	if [ -d "/var/www/$domain" ]; then
+		echo Remove old site $domain
+		wo site delete $domain --no-prompt --all --force
+		## Clean the caches
+		wo clean --all
+	fi
+
+	## Create the site
+	echo Create site $domain from $olddomain
+	wo site create $domain $sitetype
+
+
+	## Restore the site files
+	restore_wp_domain_s3
+
+	## Restore the database if --wp --wpredis --wpfc --mysql 
+	if [ "$3" == "--wp" ] || [ "$3" == "--wpredis" ] || [ "$3" == "--wpfc" ] || [ "$3" == "--mysql" ]; then
+		restore_db_s3
+	fi
+
+	## Fix caching plugins
+	site_caching
+
+	## Enable LetsEncrypt Certificate
+	if [ ! -f /etc/letsencrypt/live/$domain/privkey.pem ] && [ -f /etc/letsencrypt/live/$domain/key.pem ]; then
+		cp /etc/letsencrypt/live/$domain/key.pem /etc/letsencrypt/live/$domain/privkey.pem
+	fi
+
+	#echo Lets Encrypt DNS setup
+	#wo site update $domain -le --dns=dns_cf
+
+	echo Site $domain restored from $olddomain
+} #main
+
+function restore_wp_domain_s3 {
+	### Preserve new wp config
+	if [ -f /var/www/$domain/wp-config.php ]; then
+		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.wordops
+	fi
+	### Preserve new mysql config
+	if [ -f /var/www/$domain/wo-config.php ]; then
+		mv /var/www/$domain/wo-config.php /var/www/$domain/wo-config.php.wordops
+	fi
+
+	### Download the wordpress site backup file
+	sitefile=`aws s3 ls $s3_site/$olddomain/ | awk '{print $4}' | tail -$backupsprior | head -1`
+	echo Restoring $olddomain site backup $sitefile
+	if [ ! -f $tmp/$sitefile ]; then
+		aws s3 cp $s3options $s3_site/$olddomain/$sitefile $tmp
+	fi
+
+	### Decompress the site files
+	tar xf $tmp/$sitefile -C /var/www/$domain/
+
+	### PHP 7 Fixes
+	echo Patching PHP 7 issues
+	## Change split() to preg_split() https://www.php.net/manual/en/function.split.php
+	find /var/www/$domain/htdocs/*.php -type f -exec sed -i 's/ split(/ preg_split(/g' {} +
+
+	### Remove the old site SSL config
+        if [ -f /var/www/$domain/conf/nginx/ssl.conf ]; then
+                rm /var/www/$domain/conf/nginx/ssl.conf
+        fi
+
+	### Archive old site config
+	if [ -f /var/www/$domain/wp-config.php ]; then
+		mv /var/www/$domain/wp-config.php /var/www/$domain/wp-config.php.old
+	fi
+	### Set new preserved mysql config
+	if [ -f /var/www/$domain/wo-config.php.wordops ]; then
+		rm /var/www/$domain/wo-config.php
+		mv /var/www/$domain/wo-config.php.wordops /var/www/$domain/wo-config.php
+	fi
+	chown -Rf www-data:www-data /var/www/$domain
+	if [ ! "$cachefiles" = true ]; then
+		rm $tmp/$domain*
+	fi
+}
+
+function restore_db_s3 {
+	### Database name pulled from wp-config.php
+        #wodbname=`grep -i "DB_NAME" /var/www/$domain/wp-config.php | awk '{print $3}' | tr -d \'\"`
+	### Clear the default WordPress database
+	#mysqldump -u$my_user -p$my_password --no-data --add-drop-table $wodbname | grep ^DROP | mysql -u$my_user -p$my_password $dbname
+	dbfile=`aws s3 ls $s3_mysql/$dbname/ | awk '{print $4}' | tail -$backupsprior | head -1`
+	dbfile2=${dbfile/.sql.gz/.sql}
+	echo Restoring $domain mysql backup $dbfile
+
+	## Use cached DB file if available
+	if [ ! -f $tmp/$dbfile2 ]; then
+		aws s3 cp $s3options $s3_mysql/$dbname/$dbfile $tmp
+	fi
+	## Decompress backup file if needed
+	if [ -f $tmp/$dbfile ]; then
+		gunzip -f $tmp/$dbfile
+	fi
+
+	## Change the domain name from $olddomain to $domain
+	echo Changing the site domain from $olddomain to $domain
+	sed -i "s/$olddomain/$domain/g" $tmp/$dbfile2
+
+	## Patch the non-standard table_prefix
+	if [ "$wprefix" != "wp_" ] && [ "$options" != "--mysql" ]; then
+		## Fix non wp_ prefix databases
+		if [ -f /var/www/$domain/wp-config.php.old ]; then
+			wprefix=`cat /var/www/$domain/wp-config.php.old | grep table_prefix | cut -d \' -f 2`
+			if [ fixprefix ]; then
+				## Find/Replace the non-standard table_prefix to wp_
+				echo "Converting WordPress database tables from table_prefix $wprefix to wp_"
+				sed -i "s/$wprefix/wp_/g" $tmp/$dbfile2
+			else
+				## Keep the non-standard table_prefix
+				echo "Setting WordPress table_prefix to non-standard $wprefix"
+				sed -i "s/wp_/$wprefix/g" /var/www/$domain/wp-config.php.wordops
+			fi
+		fi
+	fi
+
+	## Set new preserved wp config and remove old config after patching the table_prefix
+	if [ -f /var/www/$domain/wp-config.php.wordops ]; then
+		mv /var/www/$domain/wp-config.php.wordops /var/www/$domain/wp-config.php
+		rm /var/www/$domain/wp-config.php.old
+	fi
+
+        ### Database name pulled from wo site info formerly wp-config.php
+        #wodbname=`grep -i "DB_NAME" /var/www/$domain/wp-config.php | awk '{print $3}' | tr -d \'\"`
+	wodbname=`wo site info $domain | grep DB_NAME | awk '{print $2}'`
+        ### Clear the default WordPress database
+        mysqldump -u$my_user -p$my_password --no-data --add-drop-table $wodbname | grep ^DROP | mysql -u$my_user -p$my_password $wodbname
+
+	## mysql restore
+	echo Restore $domain database
+	mysql -h 127.0.0.1 -u $my_user -p$my_password $wodbname < $tmp/$dbfile2
+	if [ ! "$cachefiles" = true ]; then
+		rm $tmp/$dbfile2
+	fi
+}
+
+function site_update_optimize {
+	### Unused function at this time
+	echo Not Implemented
+	#wp config get --allow-root --path=/var/www/$domain/htdocs/
+	#wp db optimize --allow-root --path=/var/www/$domain/htdocs/
+	## Update all plugins
+	#wp plugin update --all --allow-root --path=/var/www/$domain/htdocs/
+	## Install our favorite site offline plugin
+	#wp plugin install site-is-offline-plugin --allow-root --path=/var/www/$domain/htdocs/
+	## Show the list of plugins
+	#wp plugin list --allow-root --path=/var/www/$domain/htdocs/
+}
+
+function site_caching {
+	if [ "$sitetype" == "--wpredis" ]; then
+		## Remove old cache plugins
+		wp plugin deactivate w3-total-cache wp-super-cache advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin delete w3-total-cache wp-super-cache advanced-cache.php --allow-root --path=/var/www/$domain/htdocs/
+		## Activate nginx-helper & redis-cache plugins
+		wp plugin install nginx-helper redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin activate nginx-helper redis-cache --allow-root --path=/var/www/$domain/htdocs/
+	fi
+	if [ "$sitetype" == "--wp" ]; then
+		## Remove old cache plugins
+		wp plugin deactivate wp-super-cache advanced-cache.php redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin delete wp-super-cache advanced-cache.php redis-cache --allow-root --path=/var/www/$domain/htdocs/
+		## Activate nginx-helper plugin
+		wp plugin install nginx-helper --allow-root --path=/var/www/$domain/htdocs/
+		wp plugin activate nginx-helper --allow-root --path=/var/www/$domain/htdocs/
+	fi
+}
+
+main "$@"
