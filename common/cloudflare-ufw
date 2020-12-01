@@ -15,6 +15,12 @@ rm /etc/ufw/{after,after6,before,before6,user,user6}.rules.*
 ## UFW reset rules
 ufw --force reset
 
+### Webmaster Whitelist
+## Whitelist IP address to bypass Cloudflare for webmaster testing
+## Hint use local hosts file instead of changing Cloudflare proxy mode from orange to grey
+#ufw allow from 1.2.3.4 to any port 22,80,443,22222 proto tcp comment 'SSH/HTTP/HTTPS bypass for Webmaster'
+#ufw allow from `dig +short dyn.noip.com` to any port 22,80,443,22222 proto tcp comment 'SSH/HTTP/HTTPS bypass for Webmaster'
+
 ### SSH Section
 ## UFW allow LIMITed SSH access
 ## Hint skip the rest of this section if line below is enabled
@@ -32,10 +38,6 @@ asdb=( [AS21928]='T-Mobile US' [AS7922]='Comcast Xfinity' [AS701]='Verizon North
 #for asnum in ${!asdb[*]}; do for ip in $(whois -h whois.radb.net -- "-i origin ${asnum}" | grep -E 'route6?:' | awk '{print $2}' | sort | uniq); do echo ${ip} ${asdb[$asnum]}; ufw limit from ${ip} to any port 22 proto tcp comment "${asnum} ${asdb[$asnum]}"; done; done
 
 ### HTTP/HTTPS Section
-## Whitelist IP address to bypass Cloudflare for webmaster testing
-## Hint use local hosts file instead of changing Cloudflare proxy mode from orange to grey
-#ufw allow from 1.2.3.4 to any port 80,443 proto tcp comment 'HTTP/HTTPS bypass for Webmaster'
-
 ## Whitelist Cloudflare IPs https://www.cloudflare.com/ips/
 for ip in $(curl -s https://www.cloudflare.com/ips-v{4,6}); do ufw allow from ${ip} to any port 80,443 proto tcp comment 'Cloudflare'; done
 ## Whitelist UptimeRobot IPs (Fix CRLF/LF) https://uptimerobot.com/locations
